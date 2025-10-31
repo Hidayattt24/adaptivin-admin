@@ -7,24 +7,26 @@ import AuthCard from "@/components/auth/AuthCard";
 import AuthHeader from "@/components/auth/AuthHeader";
 import AuthInput from "@/components/auth/AuthInput";
 import AuthButton from "@/components/auth/AuthButton";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function MasukPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    // Mock login - ready for Supabase integration
-    console.log({ email, password });
-
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      // TODO: Add actual authentication logic here
-    }, 1500);
+    try {
+      await login(email, password);
+      router.push("/dashboard");
+    } catch (error) {
+      setError("Login failed");
+    }
   };
 
   return (

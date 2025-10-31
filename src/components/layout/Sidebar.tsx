@@ -40,6 +40,8 @@ export default function Sidebar() {
     });
 
     if (result.isConfirmed) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
       router.push("/masuk");
     }
   };
@@ -114,7 +116,7 @@ export default function Sidebar() {
               <Logout className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
             </div>
             <span className="text-[15px] font-medium leading-tight">
-              Kembali
+              Keluar
             </span>
           </button>
         </div>
