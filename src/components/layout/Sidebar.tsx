@@ -46,7 +46,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="fixed left-0 top-0 h-screen w-[300px] shadow-2xl z-40 overflow-y-auto scrollbar-hide rounded-r-[30px]"
+      className="hidden lg:fixed left-0 top-0 h-screen w-[300px] shadow-2xl z-40 overflow-y-auto scrollbar-hide rounded-r-[30px] lg:block"
       style={{
         background: 'linear-gradient(180deg, #33A1E0 0%, #ECF3F6 100%)'
       }}

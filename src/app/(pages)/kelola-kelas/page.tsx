@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/layout/Sidebar";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import ClassManagementTable from "@/components/class-management/ClassManagementTable";
 import ClassModal from "@/components/class-management/ClassModal";
 import Swal from "sweetalert2";
@@ -174,30 +174,24 @@ export default function KelolaKelasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Sidebar */}
-      <Sidebar />
+    <ResponsiveLayout title="Kelola Kelas">
+      {/* Header Section */}
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
+          Kelola Kelas
+        </h1>
+        <p className="text-gray-600 text-sm">
+          Kelola master data kelas, sekolah, dan mata pelajaran dalam sistem
+        </p>
+      </div>
 
-      {/* Main Content */}
-      <main className="ml-[300px] p-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
-        {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#33A1E0] mb-2">
-            Kelola Kelas
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Kelola master data kelas, sekolah, dan mata pelajaran dalam sistem
-          </p>
-        </div>
-
-        {/* Table */}
-        <ClassManagementTable
-          classes={classes}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onAdd={handleAdd}
-        />
-      </main>
+      {/* Table */}
+      <ClassManagementTable
+        classes={classes}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onAdd={handleAdd}
+      />
 
       {/* Modal */}
       <ClassModal
@@ -212,6 +206,6 @@ export default function KelolaKelasPage() {
             : 0
         }
       />
-    </div>
+    </ResponsiveLayout>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
+import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import UserManagementTable from "@/components/user-management/UserManagementTable";
 import UserModal from "@/components/user-management/UserModal";
 import Swal from "sweetalert2";
@@ -180,31 +180,25 @@ export default function AkunMuridPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Sidebar */}
-      <Sidebar />
+    <ResponsiveLayout title="Kelola Akun Murid">
+      {/* Header Section */}
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
+          Kelola Akun Murid
+        </h1>
+        <p className="text-gray-600 text-sm">
+          Kelola dan pantau seluruh akun murid dalam sistem
+        </p>
+      </div>
 
-      {/* Main Content */}
-      <main className="ml-[300px] p-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
-        {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#33A1E0] mb-2">
-            Kelola Akun Murid
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Kelola dan pantau seluruh akun murid dalam sistem
-          </p>
-        </div>
-
-        {/* Table */}
-        <UserManagementTable
-          title="Daftar Akun Murid"
-          users={users}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onAdd={handleAdd}
-        />
-      </main>
+      {/* Table */}
+      <UserManagementTable
+        title="Daftar Akun Murid"
+        users={users}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onAdd={handleAdd}
+      />
 
       {/* Modal */}
       <UserModal
@@ -215,6 +209,6 @@ export default function AkunMuridPage() {
         mode={modalMode}
         role="Murid"
       />
-    </div>
+    </ResponsiveLayout>
   );
 }
