@@ -1,0 +1,124 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { Dashboard, People, Class, Settings, Logout } from "@mui/icons-material";
+import SidebarItem from "./SidebarItem";
+import SidebarDropdown from "./SidebarDropdown";
+import Swal from "sweetalert2";
+
+export default function Sidebar() {
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const toggleDropdown = (name: string) => {
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    const result = await Swal.fire({
+      title: "Keluar dari Admin?",
+      text: "Apakah Anda yakin ingin keluar?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#33A1E0",
+      cancelButtonColor: "#94a3b8",
+      confirmButtonText: "Ya, Keluar",
+      cancelButtonText: "Batal",
+      background: "#ffffff",
+      customClass: {
+        popup: "rounded-[20px] shadow-2xl",
+        title: "text-[#33A1E0] text-2xl font-semibold",
+        htmlContainer: "text-gray-600 text-base font-medium",
+        confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+        cancelButton: "font-semibold px-6 py-3 rounded-[12px]",
+      },
+    });
+
+    if (result.isConfirmed) {
+      router.push("/masuk");
+    }
+  };
+
+  return (
+    <aside
+      className="fixed left-0 top-0 h-screen w-[300px] shadow-2xl z-40 overflow-y-auto scrollbar-hide rounded-r-[30px]"
+      style={{
+        background: 'linear-gradient(180deg, #33A1E0 0%, #ECF3F6 100%)'
+      }}
+    >
+      {/* Logo Section */}
+      <div className="flex items-center justify-center gap-2 px-6 py-8">
+        <Image
+          src="/logo/logo-with-name.svg"
+          alt="Adaptivin Logo"
+          width={140}
+          height={48}
+          priority
+          className="brightness-0 invert"
+        />
+      </div>
+
+      {/* DASHBOARD Section */}
+      <div className="px-6 py-4">
+        <h2 className="text-white text-2xl font-bold mb-4 tracking-wide">
+          DASHBOARD
+        </h2>
+        <div className="space-y-2">
+          <SidebarItem
+            icon={<Dashboard />}
+            label="Dashboard"
+            href="/dashboard"
+            active={pathname === "/dashboard"}
+          />
+          <SidebarDropdown
+            icon={<People />}
+            label="Kelola Pengguna"
+            isOpen={openDropdown === "pengguna"}
+            onToggle={() => toggleDropdown("pengguna")}
+            items={[
+              { label: "Kelola Akun Murid", href: "/kelola-pengguna/akun-murid" },
+              { label: "Kelola Akun Guru", href: "/kelola-pengguna/guru" },
+            ]}
+          />
+          <SidebarItem
+            icon={<Class />}
+            label="Kelola Kelas"
+            href="/kelola-kelas"
+            active={pathname === "/kelola-kelas"}
+          />
+        </div>
+      </div>
+
+      {/* PENGATURAN Section */}
+      <div className="px-6 py-4">
+        <h2 className="text-white text-2xl font-bold mb-4 tracking-wide">
+          PENGATURAN
+        </h2>
+        <div className="space-y-2">
+          <SidebarItem
+            icon={<Settings />}
+            label="Pengaturan"
+            href="/pengaturan"
+            active={pathname === "/pengaturan"}
+          />
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all bg-white text-[#33A1E0] hover:bg-gray-50"
+          >
+            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 bg-[#33A1E0]/15">
+              <Logout className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
+            </div>
+            <span className="text-[15px] font-medium leading-tight">
+              Kembali
+            </span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
