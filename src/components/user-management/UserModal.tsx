@@ -17,6 +17,7 @@ import {
 } from "@mui/icons-material";
 import CustomDatePicker from "./CustomDatePicker";
 import CustomSelect from "./CustomSelect";
+import { useClassData } from "@/contexts/ClassDataContext";
 
 interface User {
   nisn: string;
@@ -49,6 +50,7 @@ export default function UserModal({
   mode,
   role
 }: UserModalProps) {
+  const { getUniqueSchools, getClassesBySchool, getParalelsBySchoolAndClass } = useClassData();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<User>({
     nisn: "",
@@ -65,6 +67,15 @@ export default function UserModal({
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  
+  // Dynamic options based on selections
+  const schoolOptions = getUniqueSchools().map(school => ({ value: school, label: school }));
+  const classOptions = formData.sekolah 
+    ? getClassesBySchool(formData.sekolah).map(kelas => ({ value: kelas, label: `Kelas ${kelas}` }))
+    : [];
+  const paralelOptions = formData.sekolah && formData.kelas
+    ? getParalelsBySchoolAndClass(formData.sekolah, formData.kelas).map(paralel => ({ value: paralel, label: paralel }))
+    : [];
 
   useEffect(() => {
     if (user && mode === "edit") {
@@ -286,6 +297,30 @@ export default function UserModal({
                   )}
                 </div>
 
+                {/* Sekolah - Full Width */}
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+                    Sekolah
+                  </label>
+                  <CustomSelect
+                    value={formData.sekolah}
+                    onChange={(value) => {
+                      setFormData(prev => ({ ...prev, sekolah: value, kelas: "", paralel: "" }));
+                      if (errors.sekolah) {
+                        setErrors(prev => ({ ...prev, sekolah: "" }));
+                      }
+                    }}
+                    options={schoolOptions}
+                    placeholder="Pilih sekolah"
+                    icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
+                    error={errors.sekolah}
+                  />
+                  {errors.sekolah && (
+                    <p className="text-red-500 text-xs mt-1">{errors.sekolah}</p>
+                  )}
+                </div>
+
                 {/* Kelas */}
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
@@ -295,22 +330,16 @@ export default function UserModal({
                   <CustomSelect
                     value={formData.kelas}
                     onChange={(value) => {
-                      setFormData(prev => ({ ...prev, kelas: value }));
+                      setFormData(prev => ({ ...prev, kelas: value, paralel: "" }));
                       if (errors.kelas) {
                         setErrors(prev => ({ ...prev, kelas: "" }));
                       }
                     }}
-                    options={[
-                      { value: "I", label: "Kelas I" },
-                      { value: "II", label: "Kelas II" },
-                      { value: "III", label: "Kelas III" },
-                      { value: "IV", label: "Kelas IV" },
-                      { value: "V", label: "Kelas V" },
-                      { value: "VI", label: "Kelas VI" }
-                    ]}
-                    placeholder="Pilih kelas"
+                    options={classOptions}
+                    placeholder={formData.sekolah ? "Pilih kelas" : "Pilih sekolah terlebih dahulu"}
                     icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
                     error={errors.kelas}
+                    disabled={!formData.sekolah}
                   />
                   {errors.kelas && (
                     <p className="text-red-500 text-xs mt-1">{errors.kelas}</p>
@@ -323,43 +352,22 @@ export default function UserModal({
                     <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
                     Paralel
                   </label>
-                  <input
-                    type="text"
-                    name="paralel"
+                  <CustomSelect
                     value={formData.paralel}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                      errors.paralel
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-gray-200 focus:border-[#33A1E0]"
-                    } focus:outline-none placeholder:text-gray-400 placeholder:font-normal`}
-                    placeholder="Contoh: A, B, C, dll"
+                    onChange={(value) => {
+                      setFormData(prev => ({ ...prev, paralel: value }));
+                      if (errors.paralel) {
+                        setErrors(prev => ({ ...prev, paralel: "" }));
+                      }
+                    }}
+                    options={paralelOptions}
+                    placeholder={formData.sekolah && formData.kelas ? "Pilih paralel" : "Pilih sekolah dan kelas terlebih dahulu"}
+                    icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
+                    error={errors.paralel}
+                    disabled={!formData.sekolah || !formData.kelas}
                   />
                   {errors.paralel && (
                     <p className="text-red-500 text-xs mt-1">{errors.paralel}</p>
-                  )}
-                </div>
-
-                {/* Sekolah - Full Width */}
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Sekolah
-                  </label>
-                  <input
-                    type="text"
-                    name="sekolah"
-                    value={formData.sekolah}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                      errors.sekolah
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-gray-200 focus:border-[#33A1E0]"
-                    } focus:outline-none placeholder:text-gray-400 placeholder:font-normal`}
-                    placeholder="Masukkan nama sekolah"
-                  />
-                  {errors.sekolah && (
-                    <p className="text-red-500 text-xs mt-1">{errors.sekolah}</p>
                   )}
                 </div>
 

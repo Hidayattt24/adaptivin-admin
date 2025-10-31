@@ -16,6 +16,7 @@ interface CustomSelectProps {
   placeholder?: string;
   icon?: React.ReactNode;
   error?: string;
+  disabled?: boolean;
 }
 
 export default function CustomSelect({
@@ -24,7 +25,8 @@ export default function CustomSelect({
   options,
   placeholder = "Pilih opsi",
   icon,
-  error
+  error,
+  disabled = false
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -46,9 +48,12 @@ export default function CustomSelect({
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
         className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-left flex items-center justify-between ${
-          error
+          disabled
+            ? "bg-gray-100 border-gray-200 cursor-not-allowed opacity-60"
+            : error
             ? "border-red-500 focus:border-red-500"
             : isOpen
             ? "border-[#33A1E0] shadow-md"

@@ -75,6 +75,12 @@ export default function Sidebar() {
             href="/dashboard"
             active={pathname === "/dashboard"}
           />
+          <SidebarItem
+            icon={<Class sx={{ fontSize: 20 }} />}
+            label="Kelola Kelas"
+            href="/kelola-kelas"
+            active={pathname === "/kelola-kelas"}
+          />
           <SidebarDropdown
             icon={<People sx={{ fontSize: 20 }} />}
             label="Kelola Pengguna"
@@ -84,12 +90,6 @@ export default function Sidebar() {
               { label: "Kelola Akun Murid", href: "/kelola-pengguna/akun-murid" },
               { label: "Kelola Akun Guru", href: "/kelola-pengguna/guru" },
             ]}
-          />
-          <SidebarItem
-            icon={<Class sx={{ fontSize: 20 }} />}
-            label="Kelola Kelas"
-            href="/kelola-kelas"
-            active={pathname === "/kelola-kelas"}
           />
         </div>
       </div>
