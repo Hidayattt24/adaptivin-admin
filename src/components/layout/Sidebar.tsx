@@ -77,6 +77,18 @@ export default function Sidebar() {
           />
           <SidebarItem
             icon={<Class sx={{ fontSize: 20 }} />}
+            label="Kelola Sekolah"
+            href="/kelola-sekolah"
+            active={pathname === "/kelola-sekolah"}
+          />
+          <SidebarItem
+            icon={<Settings sx={{ fontSize: 20 }} />}
+            label="Kelola Admin"
+            href="/kelola-admin"
+            active={pathname === "/kelola-admin"}
+          />
+          <SidebarItem
+            icon={<Class sx={{ fontSize: 20 }} />}
             label="Kelola Kelas"
             href="/kelola-kelas"
             active={pathname === "/kelola-kelas"}
