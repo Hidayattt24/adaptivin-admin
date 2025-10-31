@@ -65,18 +65,18 @@ export default function Sidebar() {
 
       {/* DASHBOARD Section */}
       <div className="px-6 py-4">
-        <h2 className="text-white text-2xl font-bold mb-4 tracking-wide">
+        <h2 className="text-white text-xl font-bold mb-4 tracking-wide">
           DASHBOARD
         </h2>
         <div className="space-y-2">
           <SidebarItem
-            icon={<Dashboard />}
+            icon={<Dashboard sx={{ fontSize: 20 }} />}
             label="Dashboard"
             href="/dashboard"
             active={pathname === "/dashboard"}
           />
           <SidebarDropdown
-            icon={<People />}
+            icon={<People sx={{ fontSize: 20 }} />}
             label="Kelola Pengguna"
             isOpen={openDropdown === "pengguna"}
             onToggle={() => toggleDropdown("pengguna")}
@@ -86,7 +86,7 @@ export default function Sidebar() {
             ]}
           />
           <SidebarItem
-            icon={<Class />}
+            icon={<Class sx={{ fontSize: 20 }} />}
             label="Kelola Kelas"
             href="/kelola-kelas"
             active={pathname === "/kelola-kelas"}
@@ -96,19 +96,19 @@ export default function Sidebar() {
 
       {/* PENGATURAN Section */}
       <div className="px-6 py-4">
-        <h2 className="text-white text-2xl font-bold mb-4 tracking-wide">
+        <h2 className="text-white text-xl font-bold mb-4 tracking-wide">
           PENGATURAN
         </h2>
         <div className="space-y-2">
           <SidebarItem
-            icon={<Settings />}
+            icon={<Settings sx={{ fontSize: 20 }} />}
             label="Pengaturan"
             href="/pengaturan"
             active={pathname === "/pengaturan"}
           />
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all bg-white text-[#33A1E0] hover:bg-gray-50"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all bg-white text-[#33A1E0] hover:bg-gray-50 hover:shadow-md"
           >
             <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 bg-[#33A1E0]/15">
               <Logout className="text-[#33A1E0]" sx={{ fontSize: 16 }} />

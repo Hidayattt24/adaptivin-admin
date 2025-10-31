@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { ExpandMore } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 interface SidebarDropdownProps {
   icon: ReactNode;
@@ -20,26 +21,46 @@ export default function SidebarDropdown({
   onToggle,
   items,
 }: SidebarDropdownProps) {
+  const pathname = usePathname();
+
+  // Check if any child item is active
+  const isAnyChildActive = items.some(item => pathname === item.href);
+  const isActive = isOpen || isAnyChildActive;
+
   return (
     <div>
       {/* Dropdown Header */}
       <button
         onClick={onToggle}
-        className="
-          w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg
-          text-white hover:bg-white/20
-          transition-all duration-300 ease-in-out
-        "
+        className={`
+          w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[10px]
+          transition-all duration-300 ease-in-out group
+          ${
+            isActive
+              ? "bg-[#2288C3] border-2 border-white text-white shadow-lg"
+              : "bg-white text-[#33A1E0] hover:bg-gray-50 hover:shadow-md"
+          }
+        `}
       >
         <div className="flex items-center gap-3">
-          <span className="text-xl">{icon}</span>
-          <span className="text-sm font-medium">{label}</span>
+          <div
+            className={`w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+              isActive ? "bg-white/30 group-hover:bg-white/40" : "bg-[#33A1E0]/15 group-hover:bg-[#33A1E0]/25"
+            }`}
+          >
+            <span className={isActive ? "text-white" : "text-[#33A1E0]"}>
+              {icon}
+            </span>
+          </div>
+          <span className="text-[15px] font-medium leading-tight">
+            {label}
+          </span>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
         >
-          <ExpandMore className="text-white" />
+          <ExpandMore className={isActive ? "text-white" : "text-[#33A1E0]"} />
         </motion.div>
       </button>
 
@@ -53,17 +74,21 @@ export default function SidebarDropdown({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="ml-8 mt-1 space-y-1">
+            <div className="ml-4 mt-2 space-y-2">
               {items.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
-                  className="
-                    block px-4 py-2 rounded-lg text-sm text-white
-                    hover:bg-white/20 transition-all duration-200
-                  "
+                  className={`
+                    flex items-center gap-3 px-4 py-2.5 rounded-[10px] transition-all group
+                    ${
+                      pathname === item.href
+                        ? "bg-[#1E7AAF] text-white font-medium shadow-md"
+                        : "bg-white/60 text-[#33A1E0] hover:bg-white hover:shadow-sm"
+                    }
+                  `}
                 >
-                  {item.label}
+                  <span className="text-[14px] leading-tight">{item.label}</span>
                 </Link>
               ))}
             </div>
