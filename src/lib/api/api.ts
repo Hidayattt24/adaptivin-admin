@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Ambil base URL dari environment variable (aman dan fleksibel)
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 // Buat instance axios agar semua request otomatis pakai base URL
 const api = axios.create({
@@ -9,6 +9,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Middleware axios untuk otomatis nambah token JWT kalau ada

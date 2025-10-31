@@ -1,68 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { AdminManagementTable, AdminModal } from "@/components/admin-management";
 import Swal from "sweetalert2";
+import { createAdmin, getAllAdmins, updateAdmin, getAdminById,  deleteAdmin } from "@/lib/api/user";
+import { getAllSekolah } from "@/lib/api/sekolah";
 
 interface Admin {
   id: string;
-  nama: string;
+  sekolah_id: string;
+  nama_lengkap: string;
   email: string;
-  telepon: string;
-  sekolah: string;
-  alamatSekolah: string;
-  jenisKelamin: string;
-  username: string;
   password: string;
-  tanggalDibuat: string;
+  alamat: string;
+  jenisKelamin?: string;
 }
 
-// Mock data untuk admin
-const mockAdminData: Admin[] = [
-  {
-    id: "1",
-    nama: "Ahmad Fauzi",
-    email: "ahmad.fauzi@adaptivin.com",
-    telepon: "0812-3456-7890",
-    sekolah: "SDN 1 Banda Aceh",
-    alamatSekolah: "Jl. Pendidikan No. 123, Banda Aceh",
-    jenisKelamin: "Laki-laki",
-    username: "ahmad.fauzi",
-    password: "admin123",
-    tanggalDibuat: "2024-01-15"
-  },
-  {
-    id: "2",
-    nama: "Siti Maryam",
-    email: "siti.maryam@adaptivin.com",
-    telepon: "0813-4567-8901",
-    sekolah: "SDN 2 Banda Aceh",
-    alamatSekolah: "Jl. Merdeka No. 456, Banda Aceh",
-    jenisKelamin: "Perempuan",
-    username: "siti.maryam",
-    password: "admin123",
-    tanggalDibuat: "2024-02-20"
-  },
-  {
-    id: "3",
-    nama: "Budi Hartono",
-    email: "budi.hartono@adaptivin.com",
-    telepon: "0814-5678-9012",
-    sekolah: "SDN 3 Banda Aceh",
-    alamatSekolah: "Jl. Pahlawan No. 789, Banda Aceh",
-    jenisKelamin: "Laki-laki",
-    username: "budi.hartono",
-    password: "admin123",
-    tanggalDibuat: "2024-03-10"
-  }
-];
+interface Sekolah {
+  id: string;
+  nama_sekolah: string;
+}
 
 export default function KelolaAdminPage() {
-  const [admins, setAdmins] = useState<Admin[]>(mockAdminData);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [sekolahList, setSekolahList] = useState<Sekolah[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+
+  // Ambil daftar sekolah dari backend
+  useEffect(() => {
+    async function fetchSekolah() {
+      try {
+        const sekolahData = await getAllSekolah();
+        setSekolahList(sekolahData);
+      } catch (err) {
+        console.error("Gagal ambil data sekolah:", err);
+        Swal.fire("Gagal", "Tidak bisa memuat data sekolah", "error");
+      }
+    }
+    fetchSekolah();
+  }, []);
 
   const handleAdd = () => {
     setModalMode("create");
@@ -79,83 +58,45 @@ export default function KelolaAdminPage() {
   const handleDelete = async (admin: Admin) => {
     const result = await Swal.fire({
       title: "Hapus Admin Sekolah?",
-      html: `Apakah Anda yakin ingin menghapus admin <b>${admin.nama}</b>?<br/>Tindakan ini tidak dapat dibatalkan.`,
+      html: `Apakah Anda yakin ingin menghapus admin <b>${admin.nama_lengkap}</b>?<br/>Tindakan ini tidak dapat dibatalkan.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
       cancelButtonColor: "#94a3b8",
       confirmButtonText: "Ya, Hapus",
       cancelButtonText: "Batal",
-      background: "#ffffff",
-      customClass: {
-        popup: "rounded-[20px] shadow-2xl",
-        title: "text-[#ef4444] text-2xl font-semibold",
-        htmlContainer: "text-gray-600 text-base font-medium",
-        confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        cancelButton: "font-semibold px-6 py-3 rounded-[12px]",
-      },
     });
 
     if (result.isConfirmed) {
-      setAdmins(admins.filter(a => a.id !== admin.id));
-      Swal.fire({
-        title: "Berhasil!",
-        text: `Admin ${admin.nama} telah dihapus.`,
-        icon: "success",
-        confirmButtonColor: "#33A1E0",
-        confirmButtonText: "OK",
-        background: "#ffffff",
-        customClass: {
-          popup: "rounded-[20px] shadow-2xl",
-          title: "text-[#33A1E0] text-2xl font-semibold",
-          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        },
-      });
+      try {
+        await deleteAdmin(admin.id);
+        setAdmins(admins.filter((a) => a.id !== admin.id));
+        Swal.fire("Berhasil!", `${admin.nama_lengkap} telah dihapus.`, "success");
+      } catch (err) {
+        Swal.fire("Gagal", "Terjadi kesalahan saat menghapus admin", "error");
+      }
     }
   };
 
-  const handleSave = (admin: Admin) => {
-    if (modalMode === "create") {
-      const newAdmin = {
-        ...admin,
-        id: Date.now().toString(),
-        tanggalDibuat: new Date().toISOString().split('T')[0]
-      };
-      setAdmins([...admins, newAdmin]);
-      Swal.fire({
-        title: "Berhasil!",
-        text: `Admin ${admin.nama} telah ditambahkan.`,
-        icon: "success",
-        confirmButtonColor: "#33A1E0",
-        confirmButtonText: "OK",
-        background: "#ffffff",
-        customClass: {
-          popup: "rounded-[20px] shadow-2xl",
-          title: "text-[#33A1E0] text-2xl font-semibold",
-          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        },
-      });
-    } else {
-      setAdmins(admins.map(a => (a.id === admin.id ? admin : a)));
-      Swal.fire({
-        title: "Berhasil!",
-        text: `Admin ${admin.nama} telah diperbarui.`,
-        icon: "success",
-        confirmButtonColor: "#33A1E0",
-        confirmButtonText: "OK",
-        background: "#ffffff",
-        customClass: {
-          popup: "rounded-[20px] shadow-2xl",
-          title: "text-[#33A1E0] text-2xl font-semibold",
-          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        },
-      });
+  const handleSave = async (admin: Admin) => {
+    try {
+      if (modalMode === "create") {
+        const newAdmin = await createAdmin(admin);
+        setAdmins([...admins, newAdmin]);
+        Swal.fire("Berhasil!", `Admin ${admin.nama_lengkap} telah ditambahkan.`, "success");
+      } else {
+        // kalau nanti kamu buat updateAdmin(), bisa dipakai di sini
+        setAdmins(admins.map((a) => (a.id === admin.id ? admin : a)));
+        Swal.fire("Berhasil!", `Admin ${admin.nama_lengkap} telah diperbarui.`, "success");
+      }
+    } catch (err) {
+      console.error("Gagal menyimpan admin:", err);
+      Swal.fire("Gagal", "Terjadi kesalahan saat menyimpan admin", "error");
     }
   };
 
   return (
     <ResponsiveLayout title="Kelola Admin">
-      {/* Header Section */}
       <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
           Kelola Admin Sekolah
@@ -165,7 +106,6 @@ export default function KelolaAdminPage() {
         </p>
       </div>
 
-      {/* Table */}
       <AdminManagementTable
         admins={admins}
         onEdit={handleEdit}
@@ -173,13 +113,13 @@ export default function KelolaAdminPage() {
         onAdd={handleAdd}
       />
 
-      {/* Modal */}
       <AdminModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         admin={selectedAdmin}
         mode={modalMode}
+        sekolahList={sekolahList}
       />
     </ResponsiveLayout>
   );

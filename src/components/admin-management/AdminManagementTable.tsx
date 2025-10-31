@@ -16,15 +16,12 @@ import EmptyState from "../user-management/EmptyState";
 
 interface Admin {
   id: string;
-  nama: string;
+  sekolah_id: string;
+  nama_lengkap: string;
   email: string;
-  telepon: string;
-  sekolah: string;
-  alamatSekolah: string;
-  jenisKelamin: string;
-  username: string;
   password: string;
-  tanggalDibuat: string;
+  alamat: string;
+  jenisKelamin?: string;
 }
 
 interface AdminManagementTableProps {
@@ -66,9 +63,9 @@ export default function AdminManagementTable({
   const filteredAdmins = useMemo(() => {
     return admins.filter((admin) => {
       const matchesSearch =
-        admin.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        admin.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
         admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.sekolah.toLowerCase().includes(searchTerm.toLowerCase());
+        admin.sekolah_id.toLowerCase().includes(searchTerm.toLowerCase());
 
       return matchesSearch;
     });
@@ -193,7 +190,7 @@ export default function AdminManagementTable({
                           <PersonOutline className="text-blue-600" sx={{ fontSize: 16 }} />
                         </div>
                         <div>
-                          <span className="text-sm text-gray-700 font-medium block">{admin.nama}</span>
+                          <span className="text-sm text-gray-700 font-medium block">{admin.nama_lengkap}</span>
                           <span className="text-xs text-gray-500 lg:hidden">{admin.email}</span>
                         </div>
                       </div>
@@ -202,7 +199,7 @@ export default function AdminManagementTable({
                       <span className="text-sm text-gray-700">{admin.email}</span>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
-                      <span className="text-sm text-gray-700 font-medium">{admin.sekolah}</span>
+                      <span className="text-sm text-gray-700 font-medium">{admin.sekolah_id}</span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">

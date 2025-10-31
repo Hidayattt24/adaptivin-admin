@@ -25,7 +25,7 @@ export default function Sidebar() {
       text: "Apakah Anda yakin ingin keluar?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonColor: "#33A1E0",
+      confirmButtonColor: "#D32F2F",
       cancelButtonColor: "#94a3b8",
       confirmButtonText: "Ya, Keluar",
       cancelButtonText: "Batal",
@@ -122,10 +122,10 @@ export default function Sidebar() {
           />
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all bg-white text-[#33A1E0] hover:bg-gray-50 hover:shadow-md"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all bg-red-500 text-white hover:bg-red-600 hover:shadow-md"
           >
-            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 bg-[#33A1E0]/15">
-              <Logout className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
+            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 bg-white/15">
+              <Logout className="text-white" sx={{ fontSize: 16 }} />
             </div>
             <span className="text-[15px] font-medium leading-tight">
               Keluar

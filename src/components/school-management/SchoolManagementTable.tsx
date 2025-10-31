@@ -12,69 +12,60 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "../user-management/EmptyState";
 
-interface School {
+interface Sekolah {
   id: string;
-  nama: string;
-  alamat: string;
-  kota: string;
-  provinsi: string;
-  telepon: string;
-  email: string;
-  kepalaSekolah: string;
-  jumlahKelas: number;
-  jumlahMurid: number;
-  tanggalDibuat: string;
+  nama_sekolah: string;
+  alamat_sekolah: string;
 }
 
-interface SchoolManagementTableProps {
-  schools: School[];
-  onEdit: (school: School) => void;
-  onDelete: (school: School) => void;
+interface SekolahManagementTableProps {
+  sekolah: Sekolah[];
+  onEdit: (sekolah: Sekolah) => void;
+  onDelete: (sekolah: Sekolah) => void;
   onAdd: () => void;
 }
 
 export default function SchoolManagementTable({
-  schools,
+  sekolah,
   onEdit,
   onDelete,
   onAdd
-}: SchoolManagementTableProps) {
+}: SekolahManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
+  const [selectedSekolah, setSelectedSekolah] = useState<string[]>([]);
 
   const itemsPerPage = 10;
 
-  const toggleSelectSchool = (id: string) => {
-    setSelectedSchools(prev =>
+  const toggleSelectSekolah = (id: string) => {
+    setSelectedSekolah(prev =>
       prev.includes(id)
-        ? prev.filter(schoolId => schoolId !== id)
+        ? prev.filter(sekolahId => sekolahId !== id)
         : [...prev, id]
     );
   };
 
   const toggleSelectAll = () => {
-    if (selectedSchools.length === displayedSchools.length) {
-      setSelectedSchools([]);
+    if (selectedSekolah.length === displayedSekolah.length) {
+      setSelectedSekolah([]);
     } else {
-      setSelectedSchools(displayedSchools.map(s => s.id));
+      setSelectedSekolah(displayedSekolah.map(s => s.id));
     }
   };
 
-  const filteredSchools = useMemo(() => {
-    return schools.filter((school) => {
+  const filteredSekolah = useMemo(() => {
+    return sekolah.filter((sekolah) => {
       const matchesSearch =
-        school.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        school.alamat.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        school.kota.toLowerCase().includes(searchTerm.toLowerCase());
+        sekolah.nama_sekolah.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sekolah.alamat_sekolah.toLowerCase().includes(searchTerm.toLowerCase());
 
       return matchesSearch;
     });
-  }, [searchTerm, schools]);
+  }, [searchTerm, sekolah]);
 
-  const totalPages = Math.ceil(filteredSchools.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredSekolah.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const displayedSchools = filteredSchools.slice(startIndex, startIndex + itemsPerPage);
+  const displayedSekolah = filteredSekolah.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <motion.div
@@ -117,7 +108,7 @@ export default function SchoolManagementTable({
       {/* Results Info */}
       <div className="mb-4">
         <p className="text-white text-sm">
-          Menampilkan <span className="font-bold">{displayedSchools.length}</span> dari <span className="font-bold">{filteredSchools.length}</span> data
+          Menampilkan <span className="font-bold">{displayedSekolah.length}</span> dari <span className="font-bold">{filteredSekolah.length}</span> data
         </p>
       </div>
 
@@ -130,7 +121,7 @@ export default function SchoolManagementTable({
                 <th className="px-4 py-4 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedSchools.length === displayedSchools.length && displayedSchools.length > 0}
+                    checked={selectedSekolah.length === displayedSekolah.length && displayedSekolah.length > 0}
                     onChange={toggleSelectAll}
                     className="w-4 h-4 rounded accent-white cursor-pointer"
                   />
@@ -147,9 +138,6 @@ export default function SchoolManagementTable({
                     <span className="text-xs font-bold text-white uppercase tracking-wider">Alamat</span>
                   </div>
                 </th>
-                <th className="px-4 py-4 text-left hidden md:table-cell">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Kepala Sekolah</span>
-                </th>
                 <th className="px-4 py-4 text-center">
                   <span className="text-xs font-bold text-white uppercase tracking-wider">Aksi</span>
                 </th>
@@ -157,22 +145,21 @@ export default function SchoolManagementTable({
             </thead>
             <tbody>
               <AnimatePresence>
-                {displayedSchools.map((school, index) => (
+                {displayedSekolah.map((sekolah, index) => (
                   <motion.tr
-                    key={school.id}
+                    key={sekolah.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                    }`}
+                    className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      }`}
                   >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
-                        checked={selectedSchools.includes(school.id)}
-                        onChange={() => toggleSelectSchool(school.id)}
+                        checked={selectedSekolah.includes(sekolah.id)}
+                        onChange={() => toggleSelectSekolah(sekolah.id)}
                         className="w-4 h-4 rounded accent-[#33A1E0] cursor-pointer"
                       />
                     </td>
@@ -182,23 +169,19 @@ export default function SchoolManagementTable({
                           <SchoolOutlined className="text-green-600" sx={{ fontSize: 16 }} />
                         </div>
                         <div>
-                          <span className="text-sm text-gray-700 font-medium block">{school.nama}</span>
-                          <span className="text-xs text-gray-500">{school.kota}</span>
+                          <span className="text-sm text-gray-700 font-medium block">{sekolah.nama_sekolah}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-4 hidden lg:table-cell">
-                      <span className="text-sm text-gray-700">{school.alamat}</span>
-                    </td>
-                    <td className="px-4 py-4 hidden md:table-cell">
-                      <span className="text-sm text-gray-700 font-medium">{school.kepalaSekolah}</span>
+                      <span className="text-sm text-gray-700">{sekolah.alamat_sekolah}</span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => onEdit(school)}
+                          onClick={() => onEdit(sekolah)}
                           className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all shadow-md"
                           title="Edit"
                         >
@@ -207,7 +190,7 @@ export default function SchoolManagementTable({
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => onDelete(school)}
+                          onClick={() => onDelete(sekolah)}
                           className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all shadow-md"
                           title="Hapus"
                         >
@@ -221,7 +204,7 @@ export default function SchoolManagementTable({
             </tbody>
           </table>
 
-          {filteredSchools.length === 0 && (
+          {filteredSekolah.length === 0 && (
             <EmptyState
               message="Tidak ada data sekolah yang ditemukan"
               description={searchTerm
@@ -240,11 +223,10 @@ export default function SchoolManagementTable({
             whileTap={{ scale: 0.95 }}
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${
-              currentPage === 1
+            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === 1
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
-            }`}
+              }`}
           >
             Sebelumnya
           </motion.button>
@@ -256,11 +238,10 @@ export default function SchoolManagementTable({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-semibold transition-all text-sm lg:text-base ${
-                  currentPage === page
+                className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === page
                     ? "bg-white text-[#33A1E0] shadow-lg"
                     : "bg-white/30 text-white hover:bg-white/50"
-                }`}
+                  }`}
               >
                 {page}
               </motion.button>
@@ -272,11 +253,10 @@ export default function SchoolManagementTable({
             whileTap={{ scale: 0.95 }}
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${
-              currentPage === totalPages
+            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === totalPages
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
-            }`}
+              }`}
           >
             Selanjutnya
           </motion.button>

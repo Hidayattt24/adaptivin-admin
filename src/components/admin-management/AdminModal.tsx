@@ -6,9 +6,7 @@ import {
   Close,
   PersonOutline,
   EmailOutlined,
-  PhoneOutlined,
   SchoolOutlined,
-  LocationOnOutlined,
   WcOutlined,
   AccountCircleOutlined,
   LockOutlined,
@@ -24,15 +22,12 @@ import { useSchoolData } from "@/contexts/SchoolDataContext";
 
 interface Admin {
   id: string;
-  nama: string;
+  sekolah_id: string;
+  nama_lengkap: string;
   email: string;
-  telepon: string;
-  sekolah: string;
-  alamatSekolah: string;
-  jenisKelamin: string;
-  username: string;
   password: string;
-  tanggalDibuat: string;
+  alamat: string;
+  jenisKelamin?: string;
 }
 
 interface AdminModalProps {
@@ -41,6 +36,7 @@ interface AdminModalProps {
   onSave: (admin: Admin) => void;
   admin?: Admin | null;
   mode: "create" | "edit";
+  sekolahList: { id: string; nama_sekolah: string }[];
 }
 
 export default function AdminModal({
@@ -55,15 +51,12 @@ export default function AdminModal({
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<Admin>({
     id: "",
-    nama: "",
+    sekolah_id: "",
+    nama_lengkap: "",
     email: "",
-    telepon: "",
-    sekolah: "",
-    alamatSekolah: "",
-    jenisKelamin: "",
-    username: "",
     password: "",
-    tanggalDibuat: ""
+    alamat: "",
+    jenisKelamin: "",
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -82,15 +75,12 @@ export default function AdminModal({
     } else {
       setFormData({
         id: "",
-        nama: "",
+        nama_lengkap: "",
         email: "",
-        telepon: "",
-        sekolah: "",
-        alamatSekolah: "",
-        jenisKelamin: "",
-        username: "",
         password: "",
-        tanggalDibuat: ""
+        sekolah_id: "",
+        alamat: "",
+        jenisKelamin: "",
       });
       setCurrentStep(1);
     }
@@ -109,15 +99,13 @@ export default function AdminModal({
     const newErrors: { [key: string]: string } = {};
 
     if (step === 1) {
-      if (!formData.nama.trim()) newErrors.nama = "Nama wajib diisi";
-      if (!formData.email.trim()) newErrors.email = "Email wajib diisi";
-      if (!formData.telepon.trim()) newErrors.telepon = "Telepon wajib diisi";
+      if (!formData.nama_lengkap.trim()) newErrors.nama_lengkap = "Nama wajib diisi";
       if (!formData.jenisKelamin) newErrors.jenisKelamin = "Jenis kelamin wajib dipilih";
     } else if (step === 2) {
-      if (!formData.sekolah.trim()) newErrors.sekolah = "Nama sekolah wajib diisi";
-      if (!formData.alamatSekolah.trim()) newErrors.alamatSekolah = "Alamat sekolah wajib diisi";
+      if (!formData.sekolah_id.trim()) newErrors.sekolah_id = "Nama sekolah wajib diisi";
+      if (!formData.alamat.trim()) newErrors.alamat = "Alamat sekolah wajib diisi";
     } else if (step === 3) {
-      if (!formData.username.trim()) newErrors.username = "Username wajib diisi";
+      if (!formData.email.trim()) newErrors.email = "Email wajib diisi";
       if (!formData.password.trim()) newErrors.password = "Password wajib diisi";
     }
 
@@ -245,8 +233,8 @@ export default function AdminModal({
                       </label>
                       <input
                         type="text"
-                        name="nama"
-                        value={formData.nama}
+                        name="nama_lengkap"
+                        value={formData.nama_lengkap}
                         onChange={handleChange}
                         className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${errors.nama ? "border-red-500" : "border-gray-200 focus:border-[#33A1E0]"
                           } focus:outline-none text-sm lg:text-base`}
@@ -258,45 +246,11 @@ export default function AdminModal({
 
                     <div>
                       <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                        <EmailOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${errors.email ? "border-red-500" : "border-gray-200 focus:border-[#33A1E0]"
-                          } focus:outline-none text-sm lg:text-base`}
-                        placeholder="admin@email.com"
-                      />
-                      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                    </div>
-
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                        <PhoneOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                        Nomor Telepon
-                      </label>
-                      <input
-                        type="tel"
-                        name="telepon"
-                        value={formData.telepon}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${errors.telepon ? "border-red-500" : "border-gray-200 focus:border-[#33A1E0]"
-                          } focus:outline-none text-sm lg:text-base`}
-                        placeholder="0812-3456-7890"
-                      />
-                      {errors.telepon && <p className="text-red-500 text-xs mt-1">{errors.telepon}</p>}
-                    </div>
-
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                         <WcOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
                         Jenis Kelamin
                       </label>
                       <CustomSelect
-                        value={formData.jenisKelamin}
+                        value={formData.jenisKelamin ? formData.jenisKelamin : ""}
                         onChange={(value) => {
                           setFormData(prev => ({ ...prev, jenisKelamin: value }));
                           if (errors.jenisKelamin) {
@@ -339,38 +293,26 @@ export default function AdminModal({
                         Pilih Sekolah
                       </label>
                       <CustomSelect
-                        value={formData.sekolah}
+                        value={formData.sekolah_id}
                         onChange={(value) => {
                           const schoolData = getSchoolNames().find(s => s.value === value);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            sekolah: value,
-                            alamatSekolah: schoolData?.alamat || ""
+                          setFormData(prev => ({
+                            ...prev,
+                            sekolah_id: value,
+                            alamat: schoolData?.alamat || ""
                           }));
-                          if (errors.sekolah) {
-                            setErrors(prev => ({ ...prev, sekolah: "" }));
+                          if (errors.sekolah_id) {
+                            setErrors(prev => ({ ...prev, sekolah_id: "" }));
                           }
                         }}
                         options={getSchoolNames()}
                         placeholder="Pilih sekolah dari daftar"
                         icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
-                        error={errors.sekolah}
+                        error={errors.sekolah_id}
                       />
-                      {errors.sekolah && <p className="text-red-500 text-xs mt-1">{errors.sekolah}</p>}
+                      {errors.sekolah_id && <p className="text-red-500 text-xs mt-1">{errors.sekolah_id}</p>}
                       <p className="text-xs text-gray-500 mt-2">💡 Pilih dari daftar sekolah yang sudah terdaftar</p>
                     </div>
-
-                    {formData.sekolah && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-[12px]">
-                        <div className="flex items-start gap-3">
-                          <LocationOnOutlined className="text-blue-600 mt-0.5" sx={{ fontSize: 20 }} />
-                          <div>
-                            <p className="text-xs font-semibold text-blue-800 mb-1">Alamat Sekolah:</p>
-                            <p className="text-sm text-blue-700">{formData.alamatSekolah}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </motion.div>
                 )}
 
@@ -388,24 +330,24 @@ export default function AdminModal({
                         <AccountCircleOutlined className="text-white" sx={{ fontSize: 32 }} />
                       </div>
                       <h3 className="text-xl font-bold text-gray-800 mb-2">Akun Login</h3>
-                      <p className="text-sm text-gray-600">Buat username dan password untuk login</p>
+                      <p className="text-sm text-gray-600">Buat username(email) dan password untuk login</p>
                     </div>
 
                     <div>
                       <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                        <AccountCircleOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                        Username
+                        <EmailOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+                        Email
                       </label>
                       <input
-                        type="text"
-                        name="username"
-                        value={formData.username}
+                        type="email"
+                        name="email"
+                        value={formData.email}
                         onChange={handleChange}
-                        className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${errors.username ? "border-red-500" : "border-gray-200 focus:border-[#33A1E0]"
-                          } focus:outline-none font-mono text-sm lg:text-base`}
-                        placeholder="username"
+                        className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${errors.email ? "border-red-500" : "border-gray-200 focus:border-[#33A1E0]"
+                          } focus:outline-none text-sm lg:text-base`}
+                        placeholder="admin@email.com"
                       />
-                      {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
+                      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                     </div>
 
                     <div>
@@ -450,42 +392,22 @@ export default function AdminModal({
                     className="space-y-4"
                   >
                     <div className="text-center mb-6">
-                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full mb-4">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#33A1E0] to-[#2288C3] rounded-full mb-4">
                         <CheckCircle className="text-white" sx={{ fontSize: 32 }} />
                       </div>
                       <h3 className="text-xl font-bold text-gray-800 mb-2">Konfirmasi Data</h3>
-                      <p className="text-sm text-gray-600">Periksa kembali data sebelum menyimpan</p>
+                      <p className="text-sm text-gray-600">Pastikan semua data sudah benar sebelum disimpan</p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-[20px] p-6 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Nama</p>
-                          <p className="text-sm font-semibold text-gray-800">{formData.nama}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Jenis Kelamin</p>
-                          <p className="text-sm font-semibold text-gray-800">{formData.jenisKelamin}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Email</p>
-                          <p className="text-sm font-semibold text-gray-800">{formData.email}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Telepon</p>
-                          <p className="text-sm font-semibold text-gray-800">{formData.telepon}</p>
-                        </div>
-                      </div>
-                      <div className="pt-4 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Sekolah</p>
-                        <p className="text-sm font-semibold text-gray-800">{formData.sekolah}</p>
-                        <p className="text-xs text-gray-600 mt-1">{formData.alamatSekolah}</p>
-                      </div>
-                      <div className="pt-4 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Username</p>
-                        <p className="text-sm font-semibold text-gray-800 font-mono">{formData.username}</p>
-                      </div>
+                    <div className="bg-gray-50 p-4 rounded-xl border text-sm space-y-2">
+                      <p><strong>Nama Lengkap:</strong> {formData.nama_lengkap}</p>
+                      <p><strong>Jenis Kelamin:</strong> {formData.jenisKelamin}</p>
+                      <p><strong>Sekolah:</strong> {getSchoolNames().find(s => s.value === formData.sekolah_id)?.label}</p>
+                      <p><strong>Alamat:</strong> {formData.alamat}</p>
+                      <p><strong>Email:</strong> {formData.email}</p>
                     </div>
+
+                    <p className="text-xs text-gray-500 text-center">Jika sudah sesuai, klik tombol simpan untuk melanjutkan.</p>
                   </motion.div>
                 )}
               </AnimatePresence>

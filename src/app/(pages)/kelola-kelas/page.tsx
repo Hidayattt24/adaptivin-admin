@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
-import { ClassManagementTable, ClassModal } from "@/components/class-management";
+import ClassManagementTable from "@/components/class-management/ClassManagementTable";
+import ClassModal from "@/components/class-management/ClassModal";
 import Swal from "sweetalert2";
 import { useClassData, ClassData } from "@/contexts/ClassDataContext";
 

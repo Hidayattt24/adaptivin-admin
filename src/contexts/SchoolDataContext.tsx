@@ -1,57 +1,59 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { getAllSekolah } from "@/lib/api/sekolah";
 
 export interface SchoolData {
   id: string;
-  nama: string;
-  alamat: string;
-  kota: string;
-  provinsi: string;
-  telepon: string;
-  email: string;
-  kepalaSekolah: string;
-  jumlahKelas: number;
-  jumlahMurid: number;
-  tanggalDibuat: string;
+  nama_sekolah: string;
+  alamat_sekolah: string;
 }
 
-interface SchoolDataContextType {
+export interface SchoolDataContextType {
   schools: SchoolData[];
-  setSchools: (schools: SchoolData[]) => void;
+  setSchools: React.Dispatch<React.SetStateAction<SchoolData[]>>;
   getSchoolNames: () => { value: string; label: string; alamat: string }[];
 }
 
-const SchoolDataContext = createContext<SchoolDataContextType | undefined>(undefined);
+// 🧩 Inisialisasi context
+const SchoolDataContext = createContext<SchoolDataContextType | null>(null);
 
+// 🧠 Provider utama
 export function SchoolDataProvider({ children }: { children: ReactNode }) {
   const [schools, setSchools] = useState<SchoolData[]>([]);
 
-  const getSchoolNames = () => {
-    return schools.map(school => ({
-      value: school.nama,
-      label: school.nama,
-      alamat: school.alamat
+  // 🔁 Ambil data sekolah saat komponen mount
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const data = await getAllSekolah();
+        setSchools(data);
+      } catch (error) {
+        console.error("Gagal memuat data sekolah:", error);
+      }
+    };
+    fetchSchools();
+  }, []);
+
+  const getSchoolNames = () =>
+    schools.map((s: SchoolData) => ({
+      value: s.id,
+      label: s.nama_sekolah,
+      alamat: s.alamat_sekolah,
     }));
-  };
 
   return (
-    <SchoolDataContext.Provider
-      value={{
-        schools,
-        setSchools,
-        getSchoolNames
-      }}
-    >
+    <SchoolDataContext.Provider value={{ schools, setSchools, getSchoolNames }}>
       {children}
     </SchoolDataContext.Provider>
   );
 }
 
+// 🧩 Hook khusus biar gampang pakai context
 export function useSchoolData() {
   const context = useContext(SchoolDataContext);
-  if (context === undefined) {
-    throw new Error("useSchoolData must be used within a SchoolDataProvider");
+  if (!context) {
+    throw new Error("useSchoolData harus dipakai di dalam <SchoolDataProvider>");
   }
   return context;
 }

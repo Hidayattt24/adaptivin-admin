@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginAPI } from "../lib/api";
+import { loginAPI } from "../lib/api/api";
 
 interface Admin {
   id: string;

@@ -9,25 +9,17 @@ import {
   Save
 } from "@mui/icons-material";
 
-interface School {
+interface Sekolah {
   id: string;
-  nama: string;
-  alamat: string;
-  kota: string;
-  provinsi: string;
-  telepon: string;
-  email: string;
-  kepalaSekolah: string;
-  jumlahKelas: number;
-  jumlahMurid: number;
-  tanggalDibuat: string;
+  nama_sekolah: string;
+  alamat_sekolah: string;
 }
 
-interface SchoolModalProps {
+interface SekolahModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (school: School) => void;
-  school?: School | null;
+  onSave: (sekolah: Sekolah) => void;
+  sekolah?: Sekolah | null;
   mode: "create" | "edit";
 }
 
@@ -35,45 +27,29 @@ export default function SchoolModal({
   isOpen,
   onClose,
   onSave,
-  school,
+  sekolah,
   mode
-}: SchoolModalProps) {
-  const [formData, setFormData] = useState<School>({
+}: SekolahModalProps) {
+  const [formData, setFormData] = useState<Sekolah>({
     id: "",
-    nama: "",
-    alamat: "",
-    kota: "",
-    provinsi: "",
-    telepon: "",
-    email: "",
-    kepalaSekolah: "",
-    jumlahKelas: 0,
-    jumlahMurid: 0,
-    tanggalDibuat: ""
+    nama_sekolah: "",
+    alamat_sekolah: "",
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    if (school && mode === "edit") {
-      setFormData(school);
+    if (sekolah && mode === "edit") {
+      setFormData(sekolah);
     } else {
       setFormData({
         id: "",
-        nama: "",
-        alamat: "",
-        kota: "",
-        provinsi: "",
-        telepon: "",
-        email: "",
-        kepalaSekolah: "",
-        jumlahKelas: 0,
-        jumlahMurid: 0,
-        tanggalDibuat: ""
+        nama_sekolah: "",
+        alamat_sekolah: "",
       });
     }
     setErrors({});
-  }, [school, mode, isOpen]);
+  }, [sekolah, mode, isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -86,8 +62,8 @@ export default function SchoolModal({
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!formData.nama.trim()) newErrors.nama = "Nama sekolah wajib diisi";
-    if (!formData.alamat.trim()) newErrors.alamat = "Alamat wajib diisi";
+    if (!formData.nama_sekolah.trim()) newErrors.nama_sekolah = "Nama sekolah wajib diisi";
+    if (!formData.alamat_sekolah.trim()) newErrors.alamat_sekolah = "Alamat wajib diisi";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -154,8 +130,8 @@ export default function SchoolModal({
                   </label>
                   <input
                     type="text"
-                    name="nama"
-                    value={formData.nama}
+                    name="nama_sekolah"
+                    value={formData.nama_sekolah}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
                       errors.nama ? "border-red-500" : "border-gray-200 focus:border-[#33A1E0]"
@@ -173,8 +149,8 @@ export default function SchoolModal({
                     Alamat Lengkap
                   </label>
                   <textarea
-                    name="alamat"
-                    value={formData.alamat}
+                    name="alamat_sekolah"
+                    value={formData.alamat_sekolah}
                     onChange={handleChange}
                     rows={4}
                     className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
