@@ -21,28 +21,30 @@ export default function BottomNav() {
       color: "#33A1E0"
     },
     {
-      label: "Kelas",
+      label: "Admin",
+      icon: SettingsOutlined,
+      path: "/kelola-admin",
+      color: "#ef4444"
+    },
+    {
+      label: "Sekolah",
       icon: SchoolOutlined,
-      path: "/kelola-kelas",
+      path: "/kelola-sekolah",
       color: "#10b981"
     },
     {
-      label: "Pengguna",
+      label: "Lainnya",
       icon: GroupsOutlined,
-      path: "/kelola-pengguna/akun-murid",
+      path: "/kelola-kelas",
       color: "#f59e0b"
-    },
-    {
-      label: "Pengaturan",
-      icon: SettingsOutlined,
-      path: "/pengaturan",
-      color: "#8b5cf6"
     }
   ];
 
   const isActive = (path: string) => {
-    if (path === "/kelola-pengguna/akun-murid") {
-      return pathname.includes("/kelola-pengguna");
+    if (path === "/kelola-kelas") {
+      return pathname.includes("/kelola-kelas") || 
+             pathname.includes("/kelola-pengguna") ||
+             pathname.includes("/pengaturan");
     }
     return pathname === path;
   };
