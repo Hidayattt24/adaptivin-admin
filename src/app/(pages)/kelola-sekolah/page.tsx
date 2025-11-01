@@ -5,13 +5,13 @@ import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import SchoolManagementTable from "@/components/school-management/SchoolManagementTable";
 import SchoolModal from "@/components/school-management/SchoolModal";
 import Swal from "sweetalert2";
-import { useSchoolData } from "@/contexts/SchoolDataContext";
 import {
   getAllSekolah,
   createSekolah,
   updateSekolah,
   deleteSekolah,
 } from "@/lib/api/sekolah";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Sekolah {
   id: string;
@@ -20,13 +20,17 @@ interface Sekolah {
 }
 
 export default function KelolaSekolahPage() {
-  const {schools, setSchools } = useSchoolData();
+  const { admin } = useAuth();
+  const [schools, setSchools] = useState<Sekolah[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [selectedSchool, setSelectedSchool] = useState<Sekolah | null>(null);
 
   useEffect(() => {
     const fetchSekolah = async () => {
+      // ✅ Hanya fetch jika user sudah login
+      if (!admin) return;
+
       try {
         const data = await getAllSekolah();
         setSchools(data);
@@ -35,7 +39,7 @@ export default function KelolaSekolahPage() {
       }
     };
     fetchSekolah();
-  }, [setSchools]);
+  }, [admin]);
 
   const handleAdd = () => {
     setModalMode("create");
@@ -89,7 +93,7 @@ export default function KelolaSekolahPage() {
   return (
     <ResponsiveLayout title="Kelola Sekolah">
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
+        <h1 className="text-2xl lg:text-3xl font-bold text-primary mb-2">
           Kelola Sekolah
         </h1>
         <p className="text-gray-600 text-sm">
@@ -100,9 +104,8 @@ export default function KelolaSekolahPage() {
       <SchoolManagementTable
         sekolah={schools.map((s) => ({
           id: s.id,
-          nama_sekolah: (s as any).nama_sekolah ?? (s as any).name ?? "",
-          alamat_sekolah:
-            (s as any).alamat_sekolah ?? (s as any).alamat ?? (s as any).address ?? "",
+          nama_sekolah: s.nama_sekolah ?? "",
+          alamat_sekolah: s.alamat_sekolah ?? "",
         }))}
         onEdit={handleEdit}
         onDelete={handleDelete}

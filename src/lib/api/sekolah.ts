@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 // Ambil token dari cookie browser
 function getTokenFromCookie() {
@@ -10,11 +11,11 @@ function getTokenFromCookie() {
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
   return token;
-}
+};
 
 // Buat instance axios dengan konfigurasi default
 const api = axios.create({
-  baseURL: `${API_BASE}/api`,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
@@ -34,7 +35,7 @@ api.interceptors.request.use(
 export async function getAllSekolah() {
   const res = await api.get("/sekolah");
   return res.data.sekolah;
-}
+};
 
 export async function createSekolah(payload: {
   nama_sekolah: string;
@@ -42,19 +43,25 @@ export async function createSekolah(payload: {
 }) {
   const res = await api.post("/sekolah/buat-sekolah", payload);
   return res.data.sekolah;
-}
+};
 
 export async function getSekolahById(id: string) {
   const res = await api.get(`/sekolah/${id}`);
   return res.data.sekolah;
-}
+};
 
-export async function updateSekolah(id: string, payload: any) {
+export async function updateSekolah(
+  id: string,
+  payload: {
+    nama_sekolah?: string;
+    alamat_sekolah?: string;
+  }
+) {
   const res = await api.put(`/sekolah/${id}`, payload);
   return res.data.sekolah;
-}
+};
 
 export async function deleteSekolah(id: string) {
   const res = await api.delete(`/sekolah/${id}`);
   return res.data.sekolah;
-}
+};

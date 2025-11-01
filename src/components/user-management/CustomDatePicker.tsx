@@ -104,11 +104,11 @@ export default function CustomDatePicker({
           error
             ? "border-red-500 focus:border-red-500"
             : isOpen
-            ? "border-[#33A1E0] shadow-md"
+            ? "border-primary shadow-md"
             : "border-gray-200 hover:border-gray-300"
         }`}
       >
-        <CalendarToday className="text-[#33A1E0]" sx={{ fontSize: 20 }} />
+        <CalendarToday className="text-primary" sx={{ fontSize: 20 }} />
         <span className={value ? "text-gray-900 font-medium" : "text-gray-400"}>
           {value ? formatDate(value) : placeholder}
         </span>
@@ -130,12 +130,12 @@ export default function CustomDatePicker({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={previousMonth}
-                className="p-2 hover:bg-[#33A1E0]/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
               >
-                <ChevronLeft className="text-[#33A1E0]" />
+                <ChevronLeft className="text-primary" />
               </motion.button>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-[#33A1E0]">
+                <h3 className="text-lg font-bold text-primary">
                   {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </h3>
               </div>
@@ -144,9 +144,9 @@ export default function CustomDatePicker({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={nextMonth}
-                className="p-2 hover:bg-[#33A1E0]/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
               >
-                <ChevronRight className="text-[#33A1E0]" />
+                <ChevronRight className="text-primary" />
               </motion.button>
             </div>
 
@@ -175,10 +175,10 @@ export default function CustomDatePicker({
                     onClick={() => handleDateSelect(date)}
                     className={`aspect-square rounded-lg text-sm font-medium transition-all ${
                       isSelected(date)
-                        ? "bg-gradient-to-br from-[#33A1E0] to-[#2288C3] text-white shadow-lg"
+                        ? "bg-linear-to-br from-primary to-primary-dark text-white shadow-lg"
                         : isToday(date)
-                        ? "bg-[#33A1E0]/10 text-[#33A1E0] border-2 border-[#33A1E0]"
-                        : "hover:bg-[#33A1E0]/10 text-gray-700"
+                        ? "bg-primary/10 text-primary border-2 border-primary"
+                        : "hover:bg-primary/10 text-gray-700"
                     }`}
                   >
                     {date.getDate()}
@@ -197,7 +197,7 @@ export default function CustomDatePicker({
                   const today = new Date();
                   handleDateSelect(today);
                 }}
-                className="flex-1 px-3 py-2 rounded-lg bg-[#33A1E0]/10 text-[#33A1E0] text-sm font-semibold hover:bg-[#33A1E0]/20 transition-colors"
+                className="flex-1 px-3 py-2 rounded-lg bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors"
               >
                 Hari Ini
               </motion.button>

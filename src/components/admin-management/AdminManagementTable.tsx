@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
-  ExpandMore,
   Search,
   PersonOutline,
   EmailOutlined,
@@ -13,21 +12,13 @@ import {
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "../user-management/EmptyState";
-
-interface Admin {
-  id: string;
-  sekolah_id: string;
-  nama_lengkap: string;
-  email: string;
-  password: string;
-  alamat: string;
-  jenisKelamin?: string;
-}
+import type { AdminData } from "@/lib/api/user";
+import { getSekolahById } from "@/lib/api/sekolah";
 
 interface AdminManagementTableProps {
-  admins: Admin[];
-  onEdit: (admin: Admin) => void;
-  onDelete: (admin: Admin) => void;
+  admins: AdminData[];
+  onEdit: (admin: AdminData) => void | Promise<void>;
+  onDelete: (admin: AdminData) => void | Promise<void>;
   onAdd: () => void;
 }
 
@@ -40,6 +31,30 @@ export default function AdminManagementTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAdmins, setSelectedAdmins] = useState<string[]>([]);
+  const [sekolahMap, setSekolahMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchSekolahNames = async () => {
+      const newMap: Record<string, string> = {};
+
+      // ambil hanya ID unik agar tidak fetch berulang
+      const uniqueIds = Array.from(new Set(admins.map(a => a.sekolah_id).filter(Boolean)));
+
+      for (const id of uniqueIds) {
+        try {
+          const sekolah = await getSekolahById(id);
+          newMap[id] = sekolah?.nama_sekolah || "-";
+        } catch (err) {
+          console.error("Gagal mengambil sekolah:", id, err);
+          newMap[id] = "-";
+        }
+      }
+
+      setSekolahMap(newMap);
+    };
+
+    if (admins.length > 0) fetchSekolahNames();
+  }, [admins]);
 
   const itemsPerPage = 10;
 
@@ -62,10 +77,13 @@ export default function AdminManagementTable({
   // Filter admins based on search
   const filteredAdmins = useMemo(() => {
     return admins.filter((admin) => {
+      const nama = admin.nama_lengkap?.toLowerCase?.() ?? "";
+      const email = admin.email?.toLowerCase?.() ?? "";
+      const sekolahId = admin.sekolah_id?.toLowerCase?.() ?? "";
       const matchesSearch =
-        admin.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.sekolah_id.toLowerCase().includes(searchTerm.toLowerCase());
+        nama.includes(searchTerm.toLowerCase()) ||
+        email.includes(searchTerm.toLowerCase()) ||
+        sekolahId.includes(searchTerm.toLowerCase());
 
       return matchesSearch;
     });
@@ -81,7 +99,7 @@ export default function AdminManagementTable({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-[20px] p-4 lg:p-6 shadow-lg bg-gradient-to-br from-[#33A1E0] to-[#2288C3]"
+      className="rounded-[20px] p-4 lg:p-6 shadow-lg bg-linear-to-br from-primary to-primary-dark"
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -90,7 +108,7 @@ export default function AdminManagementTable({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-3 bg-white rounded-[15px] text-[#33A1E0] font-semibold hover:bg-gray-50 transition-all shadow-lg text-sm lg:text-base"
+          className="flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-gray-50 transition-all shadow-lg text-sm lg:text-base"
         >
           <Add sx={{ fontSize: 20 }} />
           <span>Tambah Admin</span>
@@ -131,7 +149,7 @@ export default function AdminManagementTable({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-[#33A1E0] to-[#2288C3]">
+              <tr className="bg-linear-to-r from-primary to-primary-dark">
                 <th className="px-4 py-4 text-left">
                   <input
                     type="checkbox"
@@ -172,16 +190,15 @@ export default function AdminManagementTable({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                    }`}
+                    className={`border-b border-gray-100 hover:bg-primary/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      }`}
                   >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
                         checked={selectedAdmins.includes(admin.id)}
                         onChange={() => toggleSelectAdmin(admin.id)}
-                        className="w-4 h-4 rounded accent-[#33A1E0] cursor-pointer"
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
                     </td>
                     <td className="px-4 py-4">
@@ -199,7 +216,7 @@ export default function AdminManagementTable({
                       <span className="text-sm text-gray-700">{admin.email}</span>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
-                      <span className="text-sm text-gray-700 font-medium">{admin.sekolah_id}</span>
+                      <span className="text-sm text-gray-700 font-medium">{sekolahMap[admin.sekolah_id] || "-"}</span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
@@ -248,11 +265,10 @@ export default function AdminManagementTable({
             whileTap={{ scale: 0.95 }}
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${
-              currentPage === 1
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
-            }`}
+            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === 1
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-white text-primary hover:bg-gray-50 shadow-md"
+              }`}
           >
             Sebelumnya
           </motion.button>
@@ -264,11 +280,10 @@ export default function AdminManagementTable({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-semibold transition-all text-sm lg:text-base ${
-                  currentPage === page
-                    ? "bg-white text-[#33A1E0] shadow-lg"
-                    : "bg-white/30 text-white hover:bg-white/50"
-                }`}
+                className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === page
+                  ? "bg-white text-primary shadow-lg"
+                  : "bg-white/30 text-white hover:bg-white/50"
+                  }`}
               >
                 {page}
               </motion.button>
@@ -280,11 +295,10 @@ export default function AdminManagementTable({
             whileTap={{ scale: 0.95 }}
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${
-              currentPage === totalPages
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
-            }`}
+            className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === totalPages
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-white text-primary hover:bg-gray-50 shadow-md"
+              }`}
           >
             Selanjutnya
           </motion.button>

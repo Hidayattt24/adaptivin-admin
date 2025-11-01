@@ -1,86 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import UserManagementTable from "@/components/user-management/UserManagementTable";
-import UserModal from "@/components/user-management/UserModal";
-import Swal from "sweetalert2";
+import UserModal, {
+  type UserModalSubmission,
+} from "@/components/user-management/UserModal";
+import {
+  createManagedUser,
+  deleteManagedUser,
+  getUsersByRole,
+  updateManagedUser,
+  type ManagedUser,
+  type ManagedUserRole,
+} from "@/lib/api/user";
 
-interface User {
-  nisn: string;
-  nama: string;
-  tanggalLahir: string;
-  alamat: string;
-  kelas: string;
-  paralel: string;
-  sekolah: string;
-  username: string;
-  password: string;
-  jenisKelamin: string;
-  role: "Murid" | "Guru";
-}
-
-// Mock data untuk guru
-const mockGuruData: User[] = [
-  {
-    nisn: "1985001",
-    nama: "Ahmad Fauzi",
-    tanggalLahir: "1985-07-10",
-    alamat: "Banda Aceh",
-    kelas: "IV",
-    paralel: "A",
-    sekolah: "SDN 1 Banda Aceh",
-    username: "ahmad.fauzi",
-    password: "ahmad123",
-    jenisKelamin: "Laki-laki",
-    role: "Guru",
-  },
-  {
-    nisn: "1987002",
-    nama: "Siti Maryam",
-    tanggalLahir: "1987-03-22",
-    alamat: "Banda Aceh",
-    kelas: "V",
-    paralel: "B",
-    sekolah: "SDN 2 Banda Aceh",
-    username: "siti.maryam",
-    password: "siti123",
-    jenisKelamin: "Perempuan",
-    role: "Guru",
-  },
-  {
-    nisn: "1990003",
-    nama: "Budi Hartono",
-    tanggalLahir: "1990-11-15",
-    alamat: "Banda Aceh",
-    kelas: "III",
-    paralel: "C",
-    sekolah: "SDN 3 Banda Aceh",
-    username: "budi.hartono",
-    password: "budi123",
-    jenisKelamin: "Laki-laki",
-    role: "Guru",
-  },
-  {
-    nisn: "1988004",
-    nama: "Nurul Hidayah",
-    tanggalLahir: "1988-06-08",
-    alamat: "Banda Aceh",
-    kelas: "VI",
-    paralel: "A",
-    sekolah: "SDN 1 Banda Aceh",
-    username: "nurul.hidayah",
-    password: "nurul123",
-    jenisKelamin: "Perempuan",
-    role: "Guru",
-  },
-];
+const ROLE: ManagedUserRole = "guru";
 
 export default function GuruPage() {
-  const [users, setUsers] = useState<User[]>(mockGuruData);
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
+
+  const loadUsers = useCallback(async () => {
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const data = await getUsersByRole(ROLE);
+      setUsers(data);
+    } catch (error) {
+      console.error("Failed to load managed users:", error);
+      setFetchError("Gagal memuat data akun guru. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedUser(null);
+  };
 
   const handleAdd = () => {
     setModalMode("create");
@@ -88,13 +55,13 @@ export default function GuruPage() {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: ManagedUser) => {
     setModalMode("edit");
     setSelectedUser(user);
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (user: User) => {
+  const handleDelete = async (user: ManagedUser) => {
     const result = await Swal.fire({
       title: "Hapus Akun Guru?",
       html: `Apakah Anda yakin ingin menghapus akun <b>${user.nama}</b>?<br/>Tindakan ini tidak dapat dibatalkan.`,
@@ -114,9 +81,14 @@ export default function GuruPage() {
       },
     });
 
-    if (result.isConfirmed) {
-      setUsers(users.filter(u => u.nisn !== user.nisn));
-      Swal.fire({
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      await deleteManagedUser(user.id);
+      setUsers((prev) => prev.filter((item) => item.id !== user.id));
+      await Swal.fire({
         title: "Berhasil!",
         text: `Akun ${user.nama} telah dihapus.`,
         icon: "success",
@@ -129,72 +101,123 @@ export default function GuruPage() {
           confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
         },
       });
+    } catch (error) {
+      console.error("Failed to delete managed user:", error);
+      await Swal.fire({
+        title: "Gagal",
+        text: "Terjadi kesalahan saat menghapus akun guru.",
+        icon: "error",
+        confirmButtonColor: "#33A1E0",
+        confirmButtonText: "OK",
+        background: "#ffffff",
+        customClass: {
+          popup: "rounded-[20px] shadow-2xl",
+          title: "text-[#ef4444] text-2xl font-semibold",
+          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+        },
+      });
     }
   };
 
-  const handleSave = (user: User) => {
-    if (modalMode === "create") {
-      setUsers([...users, user]);
-      Swal.fire({
-        title: "Berhasil!",
-        text: `Akun ${user.nama} telah ditambahkan.`,
-        icon: "success",
+  const handleModalSubmit = async (submission: UserModalSubmission) => {
+    try {
+      if (submission.mode === "create") {
+        const created = await createManagedUser(submission.payload);
+        setUsers((prev) => [created, ...prev]);
+        await Swal.fire({
+          title: "Berhasil!",
+          text: `Akun ${created.nama} berhasil ditambahkan.`,
+          icon: "success",
+          confirmButtonColor: "#33A1E0",
+          confirmButtonText: "OK",
+          background: "#ffffff",
+          customClass: {
+            popup: "rounded-[20px] shadow-2xl",
+            title: "text-[#33A1E0] text-2xl font-semibold",
+            confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+          },
+        });
+      } else {
+        const updated = await updateManagedUser(submission.id, submission.payload);
+        setUsers((prev) =>
+          prev.map((item) => (item.id === updated.id ? updated : item)),
+        );
+        await Swal.fire({
+          title: "Berhasil!",
+          text: `Akun ${updated.nama} berhasil diperbarui.`,
+          icon: "success",
+          confirmButtonColor: "#33A1E0",
+          confirmButtonText: "OK",
+          background: "#ffffff",
+          customClass: {
+            popup: "rounded-[20px] shadow-2xl",
+            title: "text-[#33A1E0] text-2xl font-semibold",
+            confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to submit managed user form:", error);
+      const message =
+        submission.mode === "create"
+          ? "Terjadi kesalahan saat menambahkan akun guru."
+          : "Terjadi kesalahan saat memperbarui akun guru.";
+      await Swal.fire({
+        title: "Gagal",
+        text: message,
+        icon: "error",
         confirmButtonColor: "#33A1E0",
         confirmButtonText: "OK",
         background: "#ffffff",
         customClass: {
           popup: "rounded-[20px] shadow-2xl",
-          title: "text-[#33A1E0] text-2xl font-semibold",
+          title: "text-[#ef4444] text-2xl font-semibold",
           confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
         },
       });
-    } else {
-      setUsers(users.map(u => (u.nisn === user.nisn ? user : u)));
-      Swal.fire({
-        title: "Berhasil!",
-        text: `Akun ${user.nama} telah diperbarui.`,
-        icon: "success",
-        confirmButtonColor: "#33A1E0",
-        confirmButtonText: "OK",
-        background: "#ffffff",
-        customClass: {
-          popup: "rounded-[20px] shadow-2xl",
-          title: "text-[#33A1E0] text-2xl font-semibold",
-          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        },
-      });
+      throw error;
     }
   };
 
   return (
     <ResponsiveLayout title="Kelola Akun Guru">
-      {/* Header Section */}
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
+        <h1 className="mb-2 text-2xl font-bold text-primary lg:text-3xl">
           Kelola Akun Guru
         </h1>
-        <p className="text-gray-600 text-sm">
+        <p className="text-sm text-gray-600">
           Kelola dan pantau seluruh akun guru dalam sistem
         </p>
       </div>
 
-      {/* Table */}
-      <UserManagementTable
-        title="Daftar Akun Guru"
-        users={users}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onAdd={handleAdd}
-      />
+      {fetchError && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {fetchError}
+        </div>
+      )}
 
-      {/* Modal */}
+      {isLoading ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-500">
+          Memuat data guru...
+        </div>
+      ) : (
+        <UserManagementTable
+          title="Daftar Akun Guru"
+          role={ROLE}
+          users={users}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onAdd={handleAdd}
+        />
+      )}
+
       <UserModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        user={selectedUser}
+        onClose={closeModal}
         mode={modalMode}
-        role="Guru"
+        role={ROLE}
+        user={selectedUser}
+        onSubmit={handleModalSubmit}
       />
     </ResponsiveLayout>
   );

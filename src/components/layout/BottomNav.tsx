@@ -8,43 +8,57 @@ import {
   GroupsOutlined,
   SettingsOutlined
 } from "@mui/icons-material";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { admin } = useAuth();
 
-  const navItems = [
+  const isSuperAdmin = admin?.role === "superadmin";
+
+  // Base nav items (always visible)
+  const baseNavItems = [
     {
       label: "Dashboard",
       icon: DashboardOutlined,
       path: "/dashboard",
-      color: "#33A1E0"
+      color: "#33A1E0",
+      showForAll: true
     },
     {
       label: "Admin",
       icon: SettingsOutlined,
       path: "/kelola-admin",
-      color: "#ef4444"
+      color: "#ef4444",
+      showForAll: false // Only superadmin
     },
     {
       label: "Sekolah",
       icon: SchoolOutlined,
       path: "/kelola-sekolah",
-      color: "#10b981"
+      color: "#10b981",
+      showForAll: false // Only superadmin
     },
     {
       label: "Lainnya",
       icon: GroupsOutlined,
       path: "/kelola-kelas",
-      color: "#f59e0b"
+      color: "#f59e0b",
+      showForAll: true
     }
   ];
 
+  // Filter nav items based on role
+  const navItems = baseNavItems.filter(item =>
+    item.showForAll || isSuperAdmin
+  );
+
   const isActive = (path: string) => {
     if (path === "/kelola-kelas") {
-      return pathname.includes("/kelola-kelas") || 
-             pathname.includes("/kelola-pengguna") ||
-             pathname.includes("/pengaturan");
+      return pathname.includes("/kelola-kelas") ||
+        pathname.includes("/kelola-pengguna") ||
+        pathname.includes("/pengaturan");
     }
     return pathname === path;
   };
@@ -78,9 +92,8 @@ export default function BottomNav() {
                 className={active ? "text-[#33A1E0]" : "text-gray-400"}
               />
               <span
-                className={`text-xs font-medium ${
-                  active ? "text-[#33A1E0]" : "text-gray-400"
-                }`}
+                className={`text-xs font-medium ${active ? "text-[#33A1E0]" : "text-gray-400"
+                  }`}
               >
                 {item.label}
               </span>

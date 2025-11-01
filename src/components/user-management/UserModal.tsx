@@ -1,7 +1,13 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Close,
   BadgeOutlined,
@@ -12,449 +18,727 @@ import {
   LockOutlined,
   WcOutlined,
   Save,
+  ErrorOutline,
   Visibility,
-  VisibilityOff
+  VisibilityOff,
 } from "@mui/icons-material";
 import CustomDatePicker from "./CustomDatePicker";
 import CustomSelect from "./CustomSelect";
-import { useClassData } from "@/contexts/ClassDataContext";
+import {
+  type ManagedUser,
+  type ManagedUserRole,
+  type CreateManagedUserPayload,
+  type UpdateManagedUserPayload,
+} from "@/lib/api/user";
+import { getAllSekolah } from "@/lib/api/sekolah";
+import { getAllKelas, type KelasResponse } from "@/lib/api/kelas";
 
-interface User {
-  nisn: string;
-  nama: string;
-  tanggalLahir: string;
-  alamat: string;
-  kelas: string;
-  paralel: string;
-  sekolah: string;
-  username: string;
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface FormState {
+  identifier: string;
+  namaLengkap: string;
+  email: string;
   password: string;
   jenisKelamin: string;
-  role: "Murid" | "Guru";
+  tanggalLahir: string;
+  alamat: string;
+  sekolahId: string;
+  kelasId: string;
 }
+
+type FormErrors = Partial<Record<keyof FormState, string>>;
+
+export type UserModalSubmission =
+  | { mode: "create"; payload: CreateManagedUserPayload }
+  | { mode: "edit"; id: string; payload: UpdateManagedUserPayload };
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: User) => void;
-  user?: User | null;
   mode: "create" | "edit";
-  role: "Murid" | "Guru";
+  role: ManagedUserRole;
+  user?: ManagedUser | null;
+  onSubmit: (submission: UserModalSubmission) => Promise<void> | void;
 }
 
+const defaultFormState: FormState = {
+  identifier: "",
+  namaLengkap: "",
+  email: "",
+  password: "",
+  jenisKelamin: "",
+  tanggalLahir: "",
+  alamat: "",
+  sekolahId: "",
+  kelasId: "",
+};
+
+const roleLabelMap: Record<ManagedUserRole, string> = {
+  guru: "Guru",
+  siswa: "Murid",
+};
+
+const identifierLabelMap: Record<ManagedUserRole, "NIP" | "NISN"> = {
+  guru: "NIP",
+  siswa: "NISN",
+};
+
+type SekolahResponse = {
+  id: string;
+  nama_sekolah?: string | null;
+};
+
+const genderOptions: Option[] = [
+  { value: "Laki-laki", label: "Laki-laki" },
+  { value: "Perempuan", label: "Perempuan" },
+];
+
+const formatKelasLabel = (kelas: KelasResponse) => {
+  const parts = [kelas.tingkat_kelas, kelas.rombel, kelas.nama_kelas].filter(
+    (part) => part && part.trim().length > 0,
+  );
+  if (parts.length === 0) {
+    return "Kelas Tanpa Nama";
+  }
+  if (kelas.nama_kelas) {
+    return kelas.nama_kelas;
+  }
+  return parts.join(" ");
+};
 export default function UserModal({
   isOpen,
   onClose,
-  onSave,
-  user,
   mode,
-  role
+  role,
+  user,
+  onSubmit,
 }: UserModalProps) {
-  const { getUniqueSchools, getClassesBySchool, getParalelsBySchoolAndClass } = useClassData();
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState<User>({
-    nisn: "",
-    nama: "",
-    tanggalLahir: "",
-    alamat: "",
-    kelas: "",
-    paralel: "",
-    sekolah: "",
-    username: "",
-    password: "",
-    jenisKelamin: "",
-    role: role
-  });
+  const [formState, setFormState] = useState<FormState>(defaultFormState);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [sekolahOptions, setSekolahOptions] = useState<Option[]>([]);
+  const [kelasOptions, setKelasOptions] = useState<Option[]>([]);
+  const [isSekolahLoading, setIsSekolahLoading] = useState(false);
+  const [isKelasLoading, setIsKelasLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  
-  // Dynamic options based on selections
-  const schoolOptions = getUniqueSchools().map(school => ({ value: school, label: school }));
-  const classOptions = formData.sekolah 
-    ? getClassesBySchool(formData.sekolah).map(kelas => ({ value: kelas, label: `Kelas ${kelas}` }))
-    : [];
-  const paralelOptions = formData.sekolah && formData.kelas
-    ? getParalelsBySchoolAndClass(formData.sekolah, formData.kelas).map(paralel => ({ value: paralel, label: paralel }))
-    : [];
+  const identifierLabel = identifierLabelMap[role];
+  const roleLabel = roleLabelMap[role];
 
   useEffect(() => {
-    if (user && mode === "edit") {
-      setFormData(user);
-    } else {
-      setFormData({
-        nisn: "",
-        nama: "",
-        tanggalLahir: "",
-        alamat: "",
-        kelas: "",
-        paralel: "",
-        sekolah: "",
-        username: "",
+    if (!isOpen) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadSekolah = async () => {
+      setIsSekolahLoading(true);
+      setFetchError(null);
+
+      try {
+        const sekolahList = (await getAllSekolah()) as SekolahResponse[];
+        if (isCancelled) return;
+
+        const options = sekolahList.map((item) => ({
+          value: item.id,
+          label: item.nama_sekolah ?? "Sekolah Tanpa Nama",
+        }));
+
+        if (mode === "edit" && user?.sekolahId && user?.sekolahName) {
+          const exists = options.some((option) => option.value === user.sekolahId);
+          if (!exists) {
+            options.push({
+              value: user.sekolahId,
+              label: user.sekolahName ?? "Sekolah Tanpa Nama",
+            });
+          }
+        }
+
+        setSekolahOptions(options);
+      } catch {
+        if (isCancelled) return;
+        setFetchError("Gagal memuat data sekolah. Silakan coba lagi.");
+        setSekolahOptions([]);
+      } finally {
+        if (!isCancelled) {
+          setIsSekolahLoading(false);
+        }
+      }
+    };
+
+    loadSekolah();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, mode, user]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (mode === "edit" && user) {
+      setFormState({
+        identifier: user.identifier ?? "",
+        namaLengkap: user.nama ?? "",
+        email: user.email ?? "",
         password: "",
-        jenisKelamin: "",
-        role: role
+        jenisKelamin: user.jenisKelamin ?? "",
+        tanggalLahir: user.tanggalLahir ?? "",
+        alamat: user.alamat ?? "",
+        sekolahId: user.sekolahId ?? "",
+        kelasId: user.kelasId ?? "",
       });
+    } else {
+      setFormState(defaultFormState);
     }
+
     setErrors({});
-  }, [user, mode, role, isOpen]);
+    setSubmitError(null);
+    setIsPasswordVisible(false);
+  }, [isOpen, mode, user, role]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+  useEffect(() => {
+    if (!isOpen || !formState.sekolahId) {
+      setKelasOptions([]);
+      return;
     }
+
+    let isCancelled = false;
+
+    const loadKelas = async () => {
+      setIsKelasLoading(true);
+
+      try {
+        const kelasList = await getAllKelas({ sekolahId: formState.sekolahId });
+        if (isCancelled) return;
+
+        const options = kelasList.map((kelas) => ({
+          value: kelas.id,
+          label: formatKelasLabel(kelas),
+        }));
+
+        if (mode === "edit" && user?.kelasId && user?.kelasName) {
+          const exists = options.some((option) => option.value === user.kelasId);
+          if (!exists) {
+            options.push({
+              value: user.kelasId,
+              label: user.kelasName ?? "Kelas Tanpa Nama",
+            });
+          }
+        }
+
+        setKelasOptions(options);
+        setFetchError(null);
+      } catch {
+        if (isCancelled) return;
+        setFetchError("Gagal memuat data kelas. Silakan coba lagi.");
+        setKelasOptions([]);
+      } finally {
+        if (!isCancelled) {
+          setIsKelasLoading(false);
+        }
+      }
+    };
+
+    loadKelas();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [formState.sekolahId, isOpen, mode, user]);
+
+  const clearFieldError = (field: keyof FormState) => {
+    setErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+      const updated = { ...prev };
+      delete updated[field];
+      return updated;
+    });
   };
 
-  const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+  const handleInputChange =
+    (field: keyof FormState) =>
+      (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { value } = event.target;
+        setFormState((prev) => ({ ...prev, [field]: value }));
+        clearFieldError(field);
+      };
 
-    if (!formData.nisn.trim()) newErrors.nisn = "NISN wajib diisi";
-    if (!formData.nama.trim()) newErrors.nama = "Nama wajib diisi";
-    if (!formData.tanggalLahir) newErrors.tanggalLahir = "Tanggal lahir wajib diisi";
-    if (!formData.alamat.trim()) newErrors.alamat = "Alamat wajib diisi";
-    if (!formData.kelas) newErrors.kelas = "Kelas wajib dipilih";
-    if (!formData.paralel) newErrors.paralel = "Paralel wajib dipilih";
-    if (!formData.sekolah.trim()) newErrors.sekolah = "Sekolah wajib diisi";
-    if (!formData.username.trim()) newErrors.username = "Username wajib diisi";
-    if (!formData.password.trim()) newErrors.password = "Password wajib diisi";
-    if (!formData.jenisKelamin) newErrors.jenisKelamin = "Jenis kelamin wajib dipilih";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleSekolahChange = (value: string) => {
+    setFormState((prev) => ({
+      ...prev,
+      sekolahId: value,
+      kelasId: "",
+    }));
+    clearFieldError("sekolahId");
+    clearFieldError("kelasId");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSelectChange = (field: keyof FormState) => (value: string) => {
+    setFormState((prev) => ({ ...prev, [field]: value }));
+    clearFieldError(field);
+  };
 
-    if (validateForm()) {
-      onSave(formData);
+  const handleDateChange = (value: string) => {
+    setFormState((prev) => ({ ...prev, tanggalLahir: value }));
+    clearFieldError("tanggalLahir");
+  };
+
+  const validateForm = (): FormErrors => {
+    const nextErrors: FormErrors = {};
+
+    if (!formState.identifier.trim()) {
+      nextErrors.identifier = `${identifierLabel} wajib diisi`;
+    }
+
+    if (!formState.namaLengkap.trim()) {
+      nextErrors.namaLengkap = "Nama lengkap wajib diisi";
+    }
+
+    const email = formState.email.trim();
+    if (!email) {
+      nextErrors.email = "Email wajib diisi";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      nextErrors.email = "Format email tidak valid";
+    }
+
+    if (mode === "create") {
+      if (!formState.password.trim()) {
+        nextErrors.password = "Password wajib diisi";
+      } else if (formState.password.trim().length < 6) {
+        nextErrors.password = "Password minimal 6 karakter";
+      }
+    }
+
+    if (!formState.jenisKelamin) {
+      nextErrors.jenisKelamin = "Jenis kelamin wajib dipilih";
+    }
+
+    if (!formState.sekolahId) {
+      nextErrors.sekolahId = "Sekolah wajib dipilih";
+    }
+
+    if (kelasOptions.length > 0 && !formState.kelasId) {
+      nextErrors.kelasId = "Kelas wajib dipilih";
+    }
+
+    return nextErrors;
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    if (mode === "edit" && !user) {
+      setSubmitError("Data pengguna tidak ditemukan.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const trimmedIdentifier = formState.identifier.trim();
+    const trimmedNama = formState.namaLengkap.trim();
+    const trimmedEmail = formState.email.trim();
+
+    const submission: UserModalSubmission =
+      mode === "create"
+        ? {
+          mode: "create",
+          payload: {
+            email: trimmedEmail,
+            password: formState.password,
+            namaLengkap: trimmedNama,
+            role,
+            jenisKelamin: formState.jenisKelamin || undefined,
+            alamat: formState.alamat || undefined,
+            tanggalLahir: formState.tanggalLahir || undefined,
+            sekolahId: formState.sekolahId,
+            kelasId: formState.kelasId || null,
+            identifier: trimmedIdentifier,
+          },
+        }
+        : {
+          mode: "edit",
+          id: user!.id,
+          payload: {
+            role,
+            namaLengkap: trimmedNama,
+            jenisKelamin: formState.jenisKelamin || undefined,
+            alamat: formState.alamat || undefined,
+            tanggalLahir: formState.tanggalLahir || null,
+            sekolahId: formState.sekolahId,
+            kelasId: formState.kelasId || null,
+            identifier: trimmedIdentifier || null,
+          },
+        };
+
+    try {
+      await onSubmit(submission);
       onClose();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan data.";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-999 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-          />
-
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="relative bg-white rounded-[25px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 30 }}
+            className="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#33A1E0] to-[#2288C3] px-8 py-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">
-                    {mode === "create" ? "Tambah" : "Edit"} Akun {role}
-                  </h2>
-                  <p className="text-white/80 text-sm">
-                    Lengkapi form di bawah untuk {mode === "create" ? "menambahkan" : "mengubah"} data {role.toLowerCase()}
-                  </p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                >
-                  <Close className="text-white" />
-                </motion.button>
-              </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 top-4 rounded-full bg-white/80 p-2 text-gray-500 shadow-md transition hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <Close />
+            </button>
+
+            <div className="bg-linear-to-r from-primary to-primary-dark px-8 py-6 text-white">
+              <p className="text-sm uppercase tracking-wide text-white/80">
+                Manajemen Pengguna {roleLabel}
+              </p>
+              <h2 className="mt-1 text-2xl font-bold">
+                {mode === "create" ? `Tambah ${roleLabel}` : `Edit ${roleLabel}`}
+              </h2>
+              <p className="mt-2 text-sm text-white/80">
+                Lengkapi informasi berikut untuk {mode === "create" ? "membuat" : "memperbarui"} akun {roleLabel.toLowerCase()}.
+              </p>
             </div>
 
-            {/* Form Content */}
-            <form onSubmit={handleSubmit} className="p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* NISN */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <BadgeOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    NISN
-                  </label>
-                  <input
-                    type="text"
-                    name="nisn"
-                    value={formData.nisn}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                      errors.nisn
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-gray-200 focus:border-[#33A1E0]"
-                    } focus:outline-none placeholder:text-gray-400 placeholder:font-normal`}
-                    placeholder="Masukkan NISN"
-                  />
-                  {errors.nisn && (
-                    <p className="text-red-500 text-xs mt-1">{errors.nisn}</p>
+            <form
+              onSubmit={handleSubmit}
+              className="max-h-[80vh] space-y-6 overflow-y-auto px-8 py-6"
+            >
+              {(fetchError || submitError) && (
+                <div className="space-y-3">
+                  {fetchError && (
+                    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                      <ErrorOutline className="mt-0.5" sx={{ fontSize: 20 }} />
+                      <span>{fetchError}</span>
+                    </div>
+                  )}
+                  {submitError && (
+                    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                      <ErrorOutline className="mt-0.5" sx={{ fontSize: 20 }} />
+                      <span>{submitError}</span>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Nama */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <PersonOutline className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Nama Lengkap
-                  </label>
-                  <input
-                    type="text"
-                    name="nama"
-                    value={formData.nama}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                      errors.nama
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-gray-200 focus:border-[#33A1E0]"
-                    } focus:outline-none placeholder:text-gray-400 placeholder:font-normal`}
-                    placeholder="Masukkan nama lengkap"
-                  />
-                  {errors.nama && (
-                    <p className="text-red-500 text-xs mt-1">{errors.nama}</p>
-                  )}
-                </div>
+              <section className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Informasi Personal
+                </h3>
 
-                {/* Tanggal Lahir */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    Tanggal Lahir
-                  </label>
-                  <CustomDatePicker
-                    value={formData.tanggalLahir}
-                    onChange={(value) => {
-                      setFormData(prev => ({ ...prev, tanggalLahir: value }));
-                      if (errors.tanggalLahir) {
-                        setErrors(prev => ({ ...prev, tanggalLahir: "" }));
-                      }
-                    }}
-                    placeholder="Pilih tanggal lahir"
-                    error={errors.tanggalLahir}
-                  />
-                  {errors.tanggalLahir && (
-                    <p className="text-red-500 text-xs mt-1">{errors.tanggalLahir}</p>
-                  )}
-                </div>
-
-                {/* Jenis Kelamin */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <WcOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Jenis Kelamin
-                  </label>
-                  <CustomSelect
-                    value={formData.jenisKelamin}
-                    onChange={(value) => {
-                      setFormData(prev => ({ ...prev, jenisKelamin: value }));
-                      if (errors.jenisKelamin) {
-                        setErrors(prev => ({ ...prev, jenisKelamin: "" }));
-                      }
-                    }}
-                    options={[
-                      { value: "Laki-laki", label: "Laki-laki" },
-                      { value: "Perempuan", label: "Perempuan" }
-                    ]}
-                    placeholder="Pilih jenis kelamin"
-                    icon={<WcOutlined sx={{ fontSize: 18 }} />}
-                    error={errors.jenisKelamin}
-                  />
-                  {errors.jenisKelamin && (
-                    <p className="text-red-500 text-xs mt-1">{errors.jenisKelamin}</p>
-                  )}
-                </div>
-
-                {/* Alamat - Full Width */}
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <LocationOnOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Alamat
-                  </label>
-                  <input
-                    type="text"
-                    name="alamat"
-                    value={formData.alamat}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                      errors.alamat
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-gray-200 focus:border-[#33A1E0]"
-                    } focus:outline-none placeholder:text-gray-400 placeholder:font-normal`}
-                    placeholder="Masukkan alamat lengkap"
-                  />
-                  {errors.alamat && (
-                    <p className="text-red-500 text-xs mt-1">{errors.alamat}</p>
-                  )}
-                </div>
-
-                {/* Sekolah - Full Width */}
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Sekolah
-                  </label>
-                  <CustomSelect
-                    value={formData.sekolah}
-                    onChange={(value) => {
-                      setFormData(prev => ({ ...prev, sekolah: value, kelas: "", paralel: "" }));
-                      if (errors.sekolah) {
-                        setErrors(prev => ({ ...prev, sekolah: "" }));
-                      }
-                    }}
-                    options={schoolOptions}
-                    placeholder="Pilih sekolah"
-                    icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
-                    error={errors.sekolah}
-                  />
-                  {errors.sekolah && (
-                    <p className="text-red-500 text-xs mt-1">{errors.sekolah}</p>
-                  )}
-                </div>
-
-                {/* Kelas */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Kelas
-                  </label>
-                  <CustomSelect
-                    value={formData.kelas}
-                    onChange={(value) => {
-                      setFormData(prev => ({ ...prev, kelas: value, paralel: "" }));
-                      if (errors.kelas) {
-                        setErrors(prev => ({ ...prev, kelas: "" }));
-                      }
-                    }}
-                    options={classOptions}
-                    placeholder={formData.sekolah ? "Pilih kelas" : "Pilih sekolah terlebih dahulu"}
-                    icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
-                    error={errors.kelas}
-                    disabled={!formData.sekolah}
-                  />
-                  {errors.kelas && (
-                    <p className="text-red-500 text-xs mt-1">{errors.kelas}</p>
-                  )}
-                </div>
-
-                {/* Paralel */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Paralel
-                  </label>
-                  <CustomSelect
-                    value={formData.paralel}
-                    onChange={(value) => {
-                      setFormData(prev => ({ ...prev, paralel: value }));
-                      if (errors.paralel) {
-                        setErrors(prev => ({ ...prev, paralel: "" }));
-                      }
-                    }}
-                    options={paralelOptions}
-                    placeholder={formData.sekolah && formData.kelas ? "Pilih paralel" : "Pilih sekolah dan kelas terlebih dahulu"}
-                    icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
-                    error={errors.paralel}
-                    disabled={!formData.sekolah || !formData.kelas}
-                  />
-                  {errors.paralel && (
-                    <p className="text-red-500 text-xs mt-1">{errors.paralel}</p>
-                  )}
-                </div>
-
-                {/* Username */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <AccountCircleOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                      errors.username
-                        ? "border-red-500 focus:border-red-500"
-                        : "border-gray-200 focus:border-[#33A1E0]"
-                    } focus:outline-none font-mono placeholder:text-gray-400 placeholder:font-normal`}
-                    placeholder="Masukkan username"
-                  />
-                  {errors.username && (
-                    <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <LockOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 pr-12 rounded-[12px] border-2 transition-all text-gray-900 font-medium ${
-                        errors.password
-                          ? "border-red-500 focus:border-red-500"
-                          : "border-gray-200 focus:border-[#33A1E0]"
-                      } focus:outline-none font-mono placeholder:text-gray-400 placeholder:font-normal`}
-                      placeholder="Masukkan password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      {showPassword ? (
-                        <VisibilityOff className="text-gray-400" sx={{ fontSize: 20 }} />
-                      ) : (
-                        <Visibility className="text-gray-400" sx={{ fontSize: 20 }} />
-                      )}
-                    </button>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      {identifierLabel}
+                    </label>
+                    <div className="relative">
+                      <BadgeOutlined
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-primary"
+                        sx={{ fontSize: 20 }}
+                      />
+                      <input
+                        type="text"
+                        value={formState.identifier}
+                        onChange={handleInputChange("identifier")}
+                        placeholder={`Masukkan ${identifierLabel.toLowerCase()}`}
+                        className={`w-full rounded-xl border-2 px-4 py-3 pl-12 text-gray-900 transition-all focus:border-primary focus:outline-none focus:ring-0 placeholder:text-gray-400 ${errors.identifier ? "border-red-500" : "border-gray-200 hover:border-gray-300"
+                          }`}
+                      />
+                    </div>
+                    {errors.identifier && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.identifier}
+                      </p>
+                    )}
                   </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-                  )}
-                </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-                <motion.button
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Nama Lengkap
+                    </label>
+                    <div className="relative">
+                      <PersonOutline
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-primary"
+                        sx={{ fontSize: 20 }}
+                      />
+                      <input
+                        type="text"
+                        value={formState.namaLengkap}
+                        onChange={handleInputChange("namaLengkap")}
+                        placeholder="Masukkan nama lengkap"
+                        className={`w-full rounded-xl border-2 px-4 py-3 pl-12 text-gray-900 transition-all focus:border-primary focus:outline-none focus:ring-0 placeholder:text-gray-400 ${errors.namaLengkap ? "border-red-500" : "border-gray-200 hover:border-gray-300"
+                          }`}
+                      />
+                    </div>
+                    {errors.namaLengkap && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.namaLengkap}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Jenis Kelamin
+                    </label>
+                    <CustomSelect
+                      value={formState.jenisKelamin}
+                      onChange={handleSelectChange("jenisKelamin")}
+                      options={genderOptions}
+                      placeholder="Pilih jenis kelamin"
+                      icon={<WcOutlined sx={{ fontSize: 20 }} />}
+                      error={errors.jenisKelamin}
+                    />
+                    {errors.jenisKelamin && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.jenisKelamin}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Tanggal Lahir
+                    </label>
+                    <CustomDatePicker
+                      value={formState.tanggalLahir}
+                      onChange={handleDateChange}
+                      placeholder="Pilih tanggal lahir"
+                      error={errors.tanggalLahir}
+                    />
+                    {errors.tanggalLahir && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.tanggalLahir}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Alamat
+                    </label>
+                    <div className="relative">
+                      <LocationOnOutlined
+                        className="absolute left-4 top-4 text-primary"
+                        sx={{ fontSize: 20 }}
+                      />
+                      <textarea
+                        value={formState.alamat}
+                        onChange={handleInputChange("alamat")}
+                        placeholder="Masukkan alamat lengkap"
+                        rows={3}
+                        className={`w-full rounded-xl border-2 px-4 py-3 pl-12 text-gray-900 transition-all focus:border-primary focus:outline-none focus:ring-0 placeholder:text-gray-400 ${errors.alamat ? "border-red-500" : "border-gray-200 hover:border-gray-300"
+                          }`}
+                      />
+                    </div>
+                    {errors.alamat && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.alamat}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Informasi Sekolah
+                </h3>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Sekolah
+                    </label>
+                    <CustomSelect
+                      value={formState.sekolahId}
+                      onChange={handleSekolahChange}
+                      options={sekolahOptions}
+                      placeholder={
+                        isSekolahLoading ? "Memuat data sekolah..." : "Pilih sekolah"
+                      }
+                      icon={<SchoolOutlined sx={{ fontSize: 20 }} />}
+                      error={errors.sekolahId}
+                      disabled={isSekolahLoading}
+                    />
+                    {errors.sekolahId && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.sekolahId}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Kelas
+                    </label>
+                    <CustomSelect
+                      value={formState.kelasId}
+                      onChange={handleSelectChange("kelasId")}
+                      options={kelasOptions}
+                      placeholder={
+                        !formState.sekolahId
+                          ? "Pilih sekolah terlebih dahulu"
+                          : isKelasLoading
+                            ? "Memuat data kelas..."
+                            : kelasOptions.length > 0
+                              ? "Pilih kelas"
+                              : "Tidak ada data kelas"
+                      }
+                      icon={<SchoolOutlined sx={{ fontSize: 20 }} />}
+                      error={errors.kelasId}
+                      disabled={isKelasLoading || !formState.sekolahId}
+                    />
+                    {errors.kelasId && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.kelasId}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">Akun</h3>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <AccountCircleOutlined
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-primary"
+                        sx={{ fontSize: 20 }}
+                      />
+                      <input
+                        type="email"
+                        value={formState.email}
+                        onChange={handleInputChange("email")}
+                        placeholder="Masukkan email"
+                        className={`w-full rounded-xl border-2 px-4 py-3 pl-12 text-gray-900 transition-all focus:border-primary focus:outline-none focus:ring-0 placeholder:text-gray-400 ${errors.email ? "border-red-500" : "border-gray-200 hover:border-gray-300"
+                          } ${mode === "edit" ? "bg-gray-50" : ""}`}
+                        disabled={mode === "edit"}
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <LockOutlined
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-primary"
+                        sx={{ fontSize: 20 }}
+                      />
+                      <input
+                        type={isPasswordVisible ? "text" : "password"}
+                        value={formState.password}
+                        onChange={handleInputChange("password")}
+                        placeholder={
+                          mode === "create"
+                            ? "Masukkan password minimal 6 karakter"
+                            : "Kosongkan jika tidak ingin mengubah password"
+                        }
+                        className={`w-full rounded-xl border-2 px-4 py-3 pr-12 pl-12 text-gray-900 transition-all focus:border-primary focus:outline-none focus:ring-0 placeholder:text-gray-400 ${errors.password ? "border-red-500" : "border-gray-200 hover:border-gray-300"
+                          } ${mode === "edit" ? "bg-gray-50" : ""}`}
+                        disabled={mode === "edit"}
+                      />
+                      {mode === "create" && (
+                        <button
+                          type="button"
+                          onClick={() => setIsPasswordVisible((prev) => !prev)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600"
+                        >
+                          {isPasswordVisible ? (
+                            <VisibilityOff sx={{ fontSize: 20 }} />
+                          ) : (
+                            <Visibility sx={{ fontSize: 20 }} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {mode === "create" ? (
+                      errors.password && (
+                        <p className="mt-2 text-sm text-red-500">
+                          {errors.password}
+                        </p>
+                      )
+                    ) : (
+                      <p className="mt-2 text-sm text-gray-500">
+                        Password tidak dapat diubah dari sini.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
+                <button
                   type="button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={onClose}
-                  className="px-6 py-3 rounded-[12px] border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all"
+                  className="rounded-xl border-2 border-gray-300 px-6 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                  disabled={isSubmitting}
                 >
                   Batal
-                </motion.button>
-                <motion.button
+                </button>
+                <button
                   type="submit"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-6 py-3 rounded-[12px] bg-gradient-to-r from-[#33A1E0] to-[#2288C3] text-white font-semibold hover:shadow-lg transition-all"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 rounded-xl bg-linear-to-r from-primary to-primary-dark px-6 py-3 font-semibold text-white shadow-md transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Save sx={{ fontSize: 20 }} />
-                  <span>{mode === "create" ? "Simpan" : "Update"}</span>
-                </motion.button>
+                  {isSubmitting ? "Menyimpan..." : "Simpan"}
+                </button>
               </div>
             </form>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -74,7 +74,7 @@ export default function MasukPage() {
           </div>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        {/* <p className="text-center text-sm text-gray-500 mt-6">
           Belum punya akun?{" "}
           <Link
             href="/daftar"
@@ -82,7 +82,7 @@ export default function MasukPage() {
           >
             Daftar sekarang
           </Link>
-        </p>
+        </p> */}
       </AuthCard>
     </AuthLayout>
   );

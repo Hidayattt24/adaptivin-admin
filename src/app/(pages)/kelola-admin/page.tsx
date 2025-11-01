@@ -4,43 +4,34 @@ import { useEffect, useState } from "react";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import { AdminManagementTable, AdminModal } from "@/components/admin-management";
 import Swal from "sweetalert2";
-import { createAdmin, getAllAdmins, updateAdmin, getAdminById,  deleteAdmin } from "@/lib/api/user";
-import { getAllSekolah } from "@/lib/api/sekolah";
-
-interface Admin {
-  id: string;
-  sekolah_id: string;
-  nama_lengkap: string;
-  email: string;
-  password: string;
-  alamat: string;
-  jenisKelamin?: string;
-}
-
-interface Sekolah {
-  id: string;
-  nama_sekolah: string;
-}
+import {
+  createAdmin,
+  getAllAdmins,
+  updateAdmin,
+  getAdminById,
+  deleteAdmin,
+  type AdminData,
+  type AdminPayload,
+} from "@/lib/api/user";
 
 export default function KelolaAdminPage() {
-  const [admins, setAdmins] = useState<Admin[]>([]);
-  const [sekolahList, setSekolahList] = useState<Sekolah[]>([]);
+  const [admins, setAdmins] = useState<AdminData[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+  const [selectedAdmin, setSelectedAdmin] = useState<AdminData | null>(null);
 
-  // Ambil daftar sekolah dari backend
   useEffect(() => {
-    async function fetchSekolah() {
+    async function fetchAdmins() {
       try {
-        const sekolahData = await getAllSekolah();
-        setSekolahList(sekolahData);
+        const adminData = await getAllAdmins();
+        setAdmins(adminData);
       } catch (err) {
-        console.error("Gagal ambil data sekolah:", err);
-        Swal.fire("Gagal", "Tidak bisa memuat data sekolah", "error");
+        console.error("Gagal ambil data admin:", err);
+        Swal.fire("Gagal", "Tidak bisa memuat data admin", "error");
       }
     }
-    fetchSekolah();
+
+    fetchAdmins();
   }, []);
 
   const handleAdd = () => {
@@ -49,13 +40,30 @@ export default function KelolaAdminPage() {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (admin: Admin) => {
+  const handleEdit = async (admin: AdminData) => {
     setModalMode("edit");
-    setSelectedAdmin(admin);
-    setIsModalOpen(true);
+    try {
+      const latestAdmin = await getAdminById(admin.id);
+      setSelectedAdmin(latestAdmin);
+    } catch (err) {
+      console.error("Gagal memuat detail admin:", err);
+      setSelectedAdmin(admin);
+      Swal.fire(
+        "Perhatian",
+        "Data terbaru admin tidak bisa dimuat, gunakan data yang ada.",
+        "warning"
+      );
+    } finally {
+      setIsModalOpen(true);
+    }
   };
 
-  const handleDelete = async (admin: Admin) => {
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedAdmin(null);
+  };
+
+  const handleDelete = async (admin: AdminData) => {
     const result = await Swal.fire({
       title: "Hapus Admin Sekolah?",
       html: `Apakah Anda yakin ingin menghapus admin <b>${admin.nama_lengkap}</b>?<br/>Tindakan ini tidak dapat dibatalkan.`,
@@ -70,35 +78,75 @@ export default function KelolaAdminPage() {
     if (result.isConfirmed) {
       try {
         await deleteAdmin(admin.id);
-        setAdmins(admins.filter((a) => a.id !== admin.id));
-        Swal.fire("Berhasil!", `${admin.nama_lengkap} telah dihapus.`, "success");
-      } catch (err) {
+        setAdmins((prev) => prev.filter((a) => a.id !== admin.id));
+        Swal.fire(
+          "Berhasil!",
+          `${admin.nama_lengkap} telah dihapus.`,
+          "success"
+        );
+      } catch (error) {
+        console.error("Gagal menghapus admin:", error);
         Swal.fire("Gagal", "Terjadi kesalahan saat menghapus admin", "error");
       }
     }
   };
 
-  const handleSave = async (admin: Admin) => {
+  const handleSave = async (admin: AdminPayload) => {
     try {
       if (modalMode === "create") {
-        const newAdmin = await createAdmin(admin);
-        setAdmins([...admins, newAdmin]);
-        Swal.fire("Berhasil!", `Admin ${admin.nama_lengkap} telah ditambahkan.`, "success");
-      } else {
-        // kalau nanti kamu buat updateAdmin(), bisa dipakai di sini
-        setAdmins(admins.map((a) => (a.id === admin.id ? admin : a)));
-        Swal.fire("Berhasil!", `Admin ${admin.nama_lengkap} telah diperbarui.`, "success");
+        if (!admin.password) {
+          throw new Error("Password wajib diisi");
+        }
+
+        const newAdmin = await createAdmin({
+          ...admin,
+          password: admin.password.trim(),
+          nama_lengkap: admin.nama_lengkap.trim(),
+          email: admin.email.trim(),
+        });
+        setAdmins((prev) => [...prev, newAdmin]);
+        Swal.fire(
+          "Berhasil!",
+          `Admin ${admin.nama_lengkap} telah ditambahkan.`,
+          "success"
+        );
+      } else if (selectedAdmin) {
+        const { password, ...rest } = admin;
+        const updatePayload: Partial<AdminPayload> = {
+          ...rest,
+        };
+
+        if (password && password.trim().length > 0) {
+          updatePayload.password = password.trim();
+        }
+
+        const updatedAdmin = await updateAdmin(selectedAdmin.id, {
+          ...updatePayload,
+          nama_lengkap: updatePayload.nama_lengkap?.trim(),
+          email: updatePayload.email?.trim(),
+        });
+
+        setAdmins((prev) =>
+          prev.map((a) => (a.id === updatedAdmin.id ? updatedAdmin : a))
+        );
+        Swal.fire(
+          "Berhasil!",
+          `Admin ${admin.nama_lengkap} telah diperbarui.`,
+          "success"
+        );
       }
+      setSelectedAdmin(null);
     } catch (err) {
       console.error("Gagal menyimpan admin:", err);
       Swal.fire("Gagal", "Terjadi kesalahan saat menyimpan admin", "error");
+      throw err;
     }
   };
 
   return (
     <ResponsiveLayout title="Kelola Admin">
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
+        <h1 className="text-2xl lg:text-3xl font-bold text-primary mb-2">
           Kelola Admin Sekolah
         </h1>
         <p className="text-gray-600 text-sm">
@@ -113,14 +161,16 @@ export default function KelolaAdminPage() {
         onAdd={handleAdd}
       />
 
-      <AdminModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        admin={selectedAdmin}
-        mode={modalMode}
-        sekolahList={sekolahList}
-      />
+      {isModalOpen && (
+        <AdminModal
+          key={`${modalMode}-${selectedAdmin?.id ?? "new"}`}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSave}
+          admin={selectedAdmin}
+          mode={modalMode}
+        />
+      )}
     </ResponsiveLayout>
   );
 }

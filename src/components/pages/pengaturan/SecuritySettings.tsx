@@ -53,7 +53,11 @@ export default function SecuritySettings() {
     return "Kuat";
   };
 
-  const handleChangePassword = () => {
+  const [isChanging, setIsChanging] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (isChanging) return;
+
     if (!passwordData.currentPassword) {
       Swal.fire({
         title: "Error!",
@@ -98,26 +102,66 @@ export default function SecuritySettings() {
       return;
     }
 
-    Swal.fire({
-      title: "Berhasil!",
-      text: "Password Anda telah diubah.",
-      icon: "success",
-      confirmButtonColor: "#33A1E0",
-      confirmButtonText: "OK",
-      background: "#ffffff",
-      customClass: {
-        popup: "rounded-[20px] shadow-2xl",
-        title: "text-[#33A1E0] text-2xl font-semibold",
-        confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-      },
-    });
+    try {
+      setIsChanging(true);
 
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    });
-    setPasswordStrength(0);
+      // Import the API function dynamically
+      const { updateMyPassword } = await import("@/lib/api/user");
+
+      await updateMyPassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      Swal.fire({
+        title: "Berhasil!",
+        text: "Password Anda telah diubah.",
+        icon: "success",
+        confirmButtonColor: "#33A1E0",
+        confirmButtonText: "OK",
+        background: "#ffffff",
+        customClass: {
+          popup: "rounded-[20px] shadow-2xl",
+          title: "text-primary text-2xl font-semibold",
+          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+        },
+      });
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+      setPasswordStrength(0);
+    } catch (error: unknown) {
+      console.error("Gagal mengubah password:", error);
+      let errorMessage = "Gagal mengubah password";
+
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === "object" && error !== null) {
+        const maybeResponse = (error as { response?: unknown }).response;
+        if (typeof maybeResponse === "object" && maybeResponse !== null) {
+          const maybeData = (maybeResponse as { data?: unknown }).data;
+          if (typeof maybeData === "object" && maybeData !== null) {
+            const maybeError = (maybeData as { error?: unknown }).error;
+            if (typeof maybeError === "string" && maybeError.length > 0) {
+              errorMessage = maybeError;
+            }
+          }
+        }
+      }
+
+      Swal.fire({
+        title: "Error!",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+        confirmButtonText: "OK",
+      });
+    } finally {
+      setIsChanging(false);
+    }
   };
 
   return (
@@ -131,7 +175,7 @@ export default function SecuritySettings() {
         {/* Current Password */}
         <div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <LockOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <LockOutlined className="text-primary" sx={{ fontSize: 18 }} />
             Password Saat Ini
           </label>
           <div className="relative">
@@ -140,7 +184,7 @@ export default function SecuritySettings() {
               name="currentPassword"
               value={passwordData.currentPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-[#33A1E0] transition-all text-gray-900 font-medium focus:outline-none"
+              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
               placeholder="Masukkan password saat ini"
             />
             <button
@@ -160,7 +204,7 @@ export default function SecuritySettings() {
         {/* New Password */}
         <div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <LockOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <LockOutlined className="text-primary" sx={{ fontSize: 18 }} />
             Password Baru
           </label>
           <div className="relative">
@@ -169,7 +213,7 @@ export default function SecuritySettings() {
               name="newPassword"
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-[#33A1E0] transition-all text-gray-900 font-medium focus:outline-none"
+              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
               placeholder="Masukkan password baru (min. 8 karakter)"
             />
             <button
@@ -194,11 +238,10 @@ export default function SecuritySettings() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-600">Kekuatan Password:</span>
-                <span className={`text-xs font-semibold ${
-                  passwordStrength <= 1 ? "text-red-600" :
-                  passwordStrength <= 3 ? "text-yellow-600" :
-                  "text-green-600"
-                }`}>
+                <span className={`text-xs font-semibold ${passwordStrength <= 1 ? "text-red-600" :
+                    passwordStrength <= 3 ? "text-yellow-600" :
+                      "text-green-600"
+                  }`}>
                   {getStrengthText()}
                 </span>
               </div>
@@ -216,7 +259,7 @@ export default function SecuritySettings() {
         {/* Confirm Password */}
         <div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <LockOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <LockOutlined className="text-primary" sx={{ fontSize: 18 }} />
             Konfirmasi Password Baru
           </label>
           <div className="relative">
@@ -225,7 +268,7 @@ export default function SecuritySettings() {
               name="confirmPassword"
               value={passwordData.confirmPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-[#33A1E0] transition-all text-gray-900 font-medium focus:outline-none"
+              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
               placeholder="Konfirmasi password baru"
             />
             <button
@@ -301,10 +344,11 @@ export default function SecuritySettings() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleChangePassword}
-          className="flex items-center gap-2 px-8 py-3 rounded-[12px] bg-gradient-to-r from-[#33A1E0] to-[#2288C3] text-white font-semibold hover:shadow-lg transition-all"
+          disabled={isChanging}
+          className="flex items-center gap-2 px-8 py-3 rounded-[12px] bg-linear-to-r from-primary to-primary-dark text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save sx={{ fontSize: 20 }} />
-          <span>Ubah Password</span>
+          <span>{isChanging ? "Mengubah Password..." : "Ubah Password"}</span>
         </motion.button>
       </div>
     </div>

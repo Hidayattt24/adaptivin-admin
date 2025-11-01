@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ExpandMore,
   Search,
@@ -10,105 +10,125 @@ import {
   LocationOnOutlined,
   SchoolOutlined,
   AccountCircleOutlined,
-  LockOutlined,
   WcOutlined,
-  Visibility,
-  VisibilityOff,
   Edit,
   Delete,
-  Add
+  Add,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "./EmptyState";
+import type { ManagedUser, ManagedUserRole } from "@/lib/api/user";
 
-interface User {
-  nisn: string;
-  nama: string;
-  tanggalLahir: string;
-  alamat: string;
-  kelas: string;
-  paralel: string;
-  sekolah: string;
-  username: string;
-  password: string;
-  jenisKelamin: string;
-  role: "Murid" | "Guru";
-}
+const DEFAULT_CLASS_FILTER = "Semua Kelas";
+
+const identifierLabelMap: Record<ManagedUserRole, "NIP" | "NISN"> = {
+  guru: "NIP",
+  siswa: "NISN",
+};
+
+const normalize = (value: string | null | undefined) =>
+  (value ?? "").toLowerCase();
+
+const formatClassDisplay = (kelas: string | null, paralel: string | null) => {
+  if (!kelas && !paralel) return "-";
+  if (!kelas) return paralel ?? "-";
+  if (!paralel) return kelas;
+  return `${kelas} ${paralel}`;
+};
 
 interface UserManagementTableProps {
   title: string;
-  users: User[];
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
+  role: ManagedUserRole;
+  users: ManagedUser[];
+  onEdit: (user: ManagedUser) => void;
+  onDelete: (user: ManagedUser) => void;
   onAdd: () => void;
 }
 
 export default function UserManagementTable({
   title,
+  role,
   users,
   onEdit,
   onDelete,
-  onAdd
+  onAdd,
 }: UserManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClass, setSelectedClass] = useState("Semua Kelas");
+  const [selectedClass, setSelectedClass] = useState(DEFAULT_CLASS_FILTER);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [visiblePasswords, setVisiblePasswords] = useState<{ [key: string]: boolean }>({});
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const itemsPerPage = 10;
-  const classes = ["Semua Kelas", "III", "IV", "V", "VI"];
+  const identifierLabel = identifierLabelMap[role];
 
-  const togglePasswordVisibility = (nisn: string) => {
-    setVisiblePasswords(prev => ({
-      ...prev,
-      [nisn]: !prev[nisn]
-    }));
-  };
+  const classOptions = useMemo(() => {
+    const levels = new Set<string>();
+    users.forEach((user) => {
+      if (user.kelasLevel) {
+        levels.add(user.kelasLevel);
+      }
+    });
+    return [
+      DEFAULT_CLASS_FILTER,
+      ...Array.from(levels).sort((a, b) => a.localeCompare(b)),
+    ];
+  }, [users]);
 
-  const toggleSelectUser = (nisn: string) => {
-    setSelectedUsers(prev =>
-      prev.includes(nisn)
-        ? prev.filter(id => id !== nisn)
-        : [...prev, nisn]
+  const effectiveSelectedClass = classOptions.includes(selectedClass)
+    ? selectedClass
+    : DEFAULT_CLASS_FILTER;
+
+  const filteredUsers = useMemo(() => {
+    const keyword = normalize(searchTerm);
+    return users.filter((user) => {
+      const matchesSearch =
+        !keyword ||
+        normalize(user.nama).includes(keyword) ||
+        normalize(user.identifier).includes(keyword) ||
+        normalize(user.email).includes(keyword);
+
+      const matchesClass =
+        effectiveSelectedClass === DEFAULT_CLASS_FILTER ||
+        user.kelasLevel === effectiveSelectedClass;
+
+      return matchesSearch && matchesClass;
+    });
+  }, [searchTerm, effectiveSelectedClass, users]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const activePage = Math.max(1, Math.min(currentPage, totalPages));
+  const startIndex = (activePage - 1) * itemsPerPage;
+  const displayedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
+
+  const toggleSelectUser = (userId: string) => {
+    setSelectedUsers((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
 
   const toggleSelectAll = () => {
+    if (displayedUsers.length === 0) {
+      setSelectedUsers([]);
+      return;
+    }
+
     if (selectedUsers.length === displayedUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(displayedUsers.map(user => user.nisn));
+      setSelectedUsers(displayedUsers.map((user) => user.id));
     }
   };
-
-  // Filter users based on search and class
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const matchesSearch =
-        user.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.nisn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesClass =
-        selectedClass === "Semua Kelas" || user.kelas === selectedClass;
-
-      return matchesSearch && matchesClass;
-    });
-  }, [searchTerm, selectedClass, users]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const displayedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-[20px] p-6 shadow-lg bg-gradient-to-br from-[#33A1E0] to-[#2288C3]"
+      className="rounded-[20px] p-6 shadow-lg bg-linear-to-br from-primary to-primary-dark"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -117,7 +137,7 @@ export default function UserManagementTable({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onAdd}
-          className="flex items-center gap-2 px-6 py-3 bg-white rounded-[15px] text-[#33A1E0] font-semibold hover:bg-gray-50 transition-all shadow-lg"
+          className="flex items-center gap-2 px-6 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-lg"
         >
           <Add sx={{ fontSize: 20 }} />
           <span>Tambah Akun</span>
@@ -125,19 +145,19 @@ export default function UserManagementTable({
       </div>
 
       {/* Search and Filter */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-wrap items-center gap-4 mb-6">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Cari nama atau NISN..."
+            placeholder="Cari nama, email, atau ID pengguna..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-12 pr-4 py-3 rounded-[15px] bg-white border-none text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 shadow-md"
+            className="w-full pl-12 pr-4 py-3 rounded-[15px] bg-white border-none text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 shadow-md"
           />
         </div>
 
@@ -145,9 +165,9 @@ export default function UserManagementTable({
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-[#33A1E0] font-semibold hover:bg-gray-50 transition-all shadow-md min-w-[150px] justify-between"
+            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-md min-w-[150px] justify-between"
           >
-            <span>{selectedClass}</span>
+            <span>{effectiveSelectedClass}</span>
             <ExpandMore
               className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
             />
@@ -161,19 +181,19 @@ export default function UserManagementTable({
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute top-full mt-2 right-0 bg-white rounded-[15px] shadow-xl overflow-hidden z-10 min-w-[150px]"
               >
-                {classes.map((kelas) => (
+                {classOptions.map((kelas) => (
                   <button
                     key={kelas}
                     onClick={() => {
                       setSelectedClass(kelas);
                       setIsDropdownOpen(false);
                       setCurrentPage(1);
+                      setSelectedUsers([]);
                     }}
-                    className={`w-full px-5 py-3 text-left hover:bg-[#ECF3F6] transition-all ${
-                      selectedClass === kelas
-                        ? "bg-[#33A1E0] text-white font-semibold"
-                        : "text-gray-700"
-                    }`}
+                    className={`w-full px-5 py-3 text-left transition-all ${effectiveSelectedClass === kelas
+                        ? "bg-primary text-white font-semibold"
+                        : "text-slate-700 hover:bg-slate-100"
+                      }`}
                   >
                     {kelas}
                   </button>
@@ -201,11 +221,14 @@ export default function UserManagementTable({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-[#33A1E0] to-[#2288C3]">
+              <tr className="bg-linear-to-r from-primary to-primary-dark">
                 <th className="px-4 py-4 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedUsers.length === displayedUsers.length && displayedUsers.length > 0}
+                    checked={
+                      selectedUsers.length === displayedUsers.length &&
+                      displayedUsers.length > 0
+                    }
                     onChange={toggleSelectAll}
                     className="w-4 h-4 rounded accent-white cursor-pointer"
                   />
@@ -213,53 +236,63 @@ export default function UserManagementTable({
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
                     <BadgeOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">NISN</span>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      {identifierLabel}
+                    </span>
                   </div>
                 </th>
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
                     <PersonOutline className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Nama</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <CakeOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Tanggal Lahir</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <LocationOnOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Alamat</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <SchoolOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Kelas</span>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Nama
+                    </span>
                   </div>
                 </th>
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
                     <AccountCircleOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Username</span>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Email
+                    </span>
                   </div>
                 </th>
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
-                    <LockOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Password</span>
+                    <CakeOutlined className="text-white" sx={{ fontSize: 18 }} />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Tanggal Lahir
+                    </span>
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left">
+                  <div className="flex items-center gap-2">
+                    <LocationOnOutlined className="text-white" sx={{ fontSize: 18 }} />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Alamat
+                    </span>
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left">
+                  <div className="flex items-center gap-2">
+                    <SchoolOutlined className="text-white" sx={{ fontSize: 18 }} />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Kelas
+                    </span>
                   </div>
                 </th>
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
                     <WcOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Gender</span>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Gender
+                    </span>
                   </div>
                 </th>
                 <th className="px-4 py-4 text-center">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Aksi</span>
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Aksi
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -267,29 +300,30 @@ export default function UserManagementTable({
               <AnimatePresence>
                 {displayedUsers.map((user, index) => (
                   <motion.tr
-                    key={user.nisn}
+                    key={user.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                    }`}
+                    className={`border-b border-gray-100 hover:bg-primary/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      }`}
                   >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
-                        checked={selectedUsers.includes(user.nisn)}
-                        onChange={() => toggleSelectUser(user.nisn)}
-                        className="w-4 h-4 rounded accent-[#33A1E0] cursor-pointer"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={() => toggleSelectUser(user.id)}
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <BadgeOutlined className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
+                          <BadgeOutlined className="text-primary" sx={{ fontSize: 16 }} />
                         </div>
-                        <span className="text-sm text-gray-700 font-medium">{user.nisn}</span>
+                        <span className="text-sm text-gray-700 font-medium">
+                          {user.identifier ?? "-"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -297,31 +331,9 @@ export default function UserManagementTable({
                         <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
                           <PersonOutline className="text-purple-600" sx={{ fontSize: 16 }} />
                         </div>
-                        <span className="text-sm text-gray-700 font-medium">{user.nama}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
-                          <CakeOutlined className="text-pink-600" sx={{ fontSize: 16 }} />
-                        </div>
-                        <span className="text-sm text-gray-600">{user.tanggalLahir}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                          <LocationOnOutlined className="text-orange-600" sx={{ fontSize: 16 }} />
-                        </div>
-                        <span className="text-sm text-gray-600">{user.alamat}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                          <SchoolOutlined className="text-green-600" sx={{ fontSize: 16 }} />
-                        </div>
-                        <span className="text-sm text-gray-700 font-semibold">{user.kelas} {user.paralel}</span>
+                        <span className="text-sm text-gray-700 font-medium">
+                          {user.nama}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -329,27 +341,39 @@ export default function UserManagementTable({
                         <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
                           <AccountCircleOutlined className="text-cyan-600" sx={{ fontSize: 16 }} />
                         </div>
-                        <span className="text-sm text-gray-600 font-mono">{user.username}</span>
+                        <span className="text-sm text-gray-600 font-medium break-all">
+                          {user.email || "-"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                          <LockOutlined className="text-red-600" sx={{ fontSize: 16 }} />
+                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
+                          <CakeOutlined className="text-pink-600" sx={{ fontSize: 16 }} />
                         </div>
-                        <span className="text-sm text-gray-600 font-mono">
-                          {visiblePasswords[user.nisn] ? user.password : "••••••"}
+                        <span className="text-sm text-gray-600">
+                          {user.tanggalLahir ?? "-"}
                         </span>
-                        <button
-                          onClick={() => togglePasswordVisibility(user.nisn)}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
-                        >
-                          {visiblePasswords[user.nisn] ? (
-                            <VisibilityOff className="text-gray-400" sx={{ fontSize: 16 }} />
-                          ) : (
-                            <Visibility className="text-gray-400" sx={{ fontSize: 16 }} />
-                          )}
-                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                          <LocationOnOutlined className="text-orange-600" sx={{ fontSize: 16 }} />
+                        </div>
+                        <span className="text-sm text-gray-600">
+                          {user.alamat ?? "-"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                          <SchoolOutlined className="text-green-600" sx={{ fontSize: 16 }} />
+                        </div>
+                        <span className="text-sm text-gray-700 font-semibold">
+                          {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -357,7 +381,9 @@ export default function UserManagementTable({
                         <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
                           <WcOutlined className="text-teal-600" sx={{ fontSize: 16 }} />
                         </div>
-                        <span className="text-sm text-gray-600">{user.jenisKelamin}</span>
+                        <span className="text-sm text-gray-600">
+                          {user.jenisKelamin ?? "-"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -405,13 +431,12 @@ export default function UserManagementTable({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              currentPage === 1
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={activePage === 1}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${activePage === 1
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
-            }`}
+                : "bg-white text-primary hover:bg-gray-50 shadow-md"
+              }`}
           >
             Sebelumnya
           </motion.button>
@@ -423,11 +448,10 @@ export default function UserManagementTable({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentPage(page)}
-                className={`w-10 h-10 rounded-lg font-semibold transition-all ${
-                  currentPage === page
-                    ? "bg-white text-[#33A1E0] shadow-lg"
+                className={`w-10 h-10 rounded-lg font-semibold transition-all ${activePage === page
+                    ? "bg-white text-primary shadow-lg"
                     : "bg-white/30 text-white hover:bg-white/50"
-                }`}
+                  }`}
               >
                 {page}
               </motion.button>
@@ -437,13 +461,12 @@ export default function UserManagementTable({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              currentPage === totalPages
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={activePage === totalPages}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${activePage === totalPages
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
-            }`}
+                : "bg-white text-primary hover:bg-gray-50 shadow-md"
+              }`}
           >
             Selanjutnya
           </motion.button>

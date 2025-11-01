@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Edit,
   Delete,
@@ -14,6 +14,9 @@ import {
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAllKelas, type KelasResponse } from "@/lib/api/kelas";
+import { getAllSekolah } from "@/lib/api/sekolah";
 
 interface ClassData {
   id: string;
@@ -25,56 +28,59 @@ interface ClassData {
   tahunAjaran: string;
 }
 
-const mockClasses: ClassData[] = [
-  {
-    id: "1",
-    namaSekolah: "SDN 1 Banda Aceh",
-    kelas: "4",
-    paralel: "A",
-    mataPelajaran: "MATEMATIKA",
-    jumlahMurid: 32,
-    tahunAjaran: "2025/2026",
-  },
-  {
-    id: "2",
-    namaSekolah: "SDN 2 Banda Aceh",
-    kelas: "4",
-    paralel: "B",
-    mataPelajaran: "MATEMATIKA",
-    jumlahMurid: 30,
-    tahunAjaran: "2025/2026",
-  },
-  {
-    id: "3",
-    namaSekolah: "SDN 3 Banda Aceh",
-    kelas: "5",
-    paralel: "A",
-    mataPelajaran: "MATEMATIKA",
-    jumlahMurid: 28,
-    tahunAjaran: "2025/2026",
-  },
-  {
-    id: "4",
-    namaSekolah: "SDN 1 Banda Aceh",
-    kelas: "3",
-    paralel: "C",
-    mataPelajaran: "MATEMATIKA",
-    jumlahMurid: 35,
-    tahunAjaran: "2024/2025",
-  },
-];
-
 export default function ClassTable() {
+  const { admin } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("Semua Kelas");
   const [showAll, setShowAll] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [classes, setClasses] = useState<ClassData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const classes = ["Semua Kelas", "3", "4", "5"];
+  const classLevels = ["Semua Kelas", "I", "II", "III", "IV", "V", "VI"];
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!admin) return;
+
+      try {
+        setIsLoading(true);
+
+        // Fetch sekolah map
+        const sekolahData = await getAllSekolah();
+        const sekolahMap: Record<string, string> = {};
+        (sekolahData || []).forEach((s: { id: string; nama_sekolah?: string }) => {
+          if (s?.id) {
+            sekolahMap[s.id] = s.nama_sekolah ?? "Sekolah tidak ditemukan";
+          }
+        });
+
+        // Fetch kelas data
+        const kelasData = await getAllKelas();
+        const transformedClasses: ClassData[] = kelasData.map((k: KelasResponse) => ({
+          id: k.id,
+          namaSekolah: sekolahMap[k.sekolah_id] ?? "Sekolah tidak ditemukan",
+          kelas: k.tingkat_kelas || "-",
+          paralel: k.rombel || "-",
+          mataPelajaran: k.mata_pelajaran?.toUpperCase() || "MATEMATIKA",
+          jumlahMurid: k.jumlah_siswa ?? 0,
+          tahunAjaran: k.tahun_ajaran || "-",
+        }));
+
+        setClasses(transformedClasses);
+      } catch (error) {
+        console.error("Gagal memuat data kelas:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClasses();
+  }, [admin]);
 
   // Filter classes based on search and class selection
   const filteredClasses = useMemo(() => {
-    return mockClasses.filter((classData) => {
+    return classes.filter((classData) => {
       const matchesSearch =
         classData.namaSekolah.toLowerCase().includes(searchTerm.toLowerCase()) ||
         classData.paralel.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -85,7 +91,7 @@ export default function ClassTable() {
 
       return matchesSearch && matchesClass;
     });
-  }, [searchTerm, selectedClass]);
+  }, [searchTerm, selectedClass, classes]);
 
   const displayedClasses = showAll ? filteredClasses : filteredClasses.slice(0, 2);
 
@@ -181,20 +187,19 @@ export default function ClassTable() {
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute top-full mt-2 right-0 bg-white rounded-[15px] shadow-xl overflow-hidden z-10 min-w-[150px]"
               >
-                {classes.map((kelas) => (
+                {classLevels.map((level) => (
                   <button
-                    key={kelas}
+                    key={level}
                     onClick={() => {
-                      setSelectedClass(kelas);
+                      setSelectedClass(level);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full px-5 py-3 text-left hover:bg-[#ECF3F6] transition-all ${
-                      selectedClass === kelas
+                    className={`w-full px-5 py-3 text-left hover:bg-[#ECF3F6] transition-all ${selectedClass === level
                         ? "bg-[#33A1E0] text-white font-semibold"
                         : "text-gray-700"
-                    }`}
+                      }`}
                   >
-                    {kelas}
+                    {level}
                   </button>
                 ))}
               </motion.div>
@@ -205,150 +210,132 @@ export default function ClassTable() {
 
       {/* Table */}
       <div className="bg-white/95 backdrop-blur-sm rounded-[15px] overflow-hidden shadow-lg border border-gray-100">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#33A1E0]">
-                <th className="px-4 py-4 text-left">
-                  <input type="checkbox" className="w-4 h-4 rounded accent-white" />
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <SchoolOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Nama Sekolah</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <ClassOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Kelas</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <ClassOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Paralel</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <MenuBookOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Mata Pelajaran</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <PeopleOutlineOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Jumlah Murid</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <CalendarTodayOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Tahun Ajaran</span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Aksi</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence>
-                {displayedClasses.map((classData, index) => (
-                  <motion.tr
-                    key={classData.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                    }`}
-                  >
-                    <td className="px-4 py-4">
-                      <input type="checkbox" className="w-4 h-4 rounded accent-[#33A1E0]" />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 font-medium">Memuat data kelas...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#33A1E0]">
+                  <th className="px-4 py-4 text-left">
+                    <input type="checkbox" className="w-4 h-4 rounded accent-white" />
+                  </th>
+                  <th className="px-4 py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <SchoolOutlined className="text-white" sx={{ fontSize: 18 }} />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Nama Sekolah</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <ClassOutlined className="text-white" sx={{ fontSize: 18 }} />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Kelas</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <ClassOutlined className="text-white" sx={{ fontSize: 18 }} />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Paralel</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <MenuBookOutlined className="text-white" sx={{ fontSize: 18 }} />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Mata Pelajaran</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <PeopleOutlineOutlined className="text-white" sx={{ fontSize: 18 }} />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Jumlah Murid</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <CalendarTodayOutlined className="text-white" sx={{ fontSize: 18 }} />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Tahun Ajaran</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence>
+                  {displayedClasses.map((classData, index) => (
+                    <motion.tr
+                      key={classData.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                        }`}
+                    >
+                      <td className="px-4 py-4">
+                        <input type="checkbox" className="w-4 h-4 rounded accent-[#33A1E0]" />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
+                          </div>
+                          <span className="text-sm text-gray-700 font-medium">{classData.namaSekolah}</span>
                         </div>
-                        <span className="text-sm text-gray-700 font-medium">{classData.namaSekolah}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                          <ClassOutlined className="text-purple-600" sx={{ fontSize: 16 }} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                            <ClassOutlined className="text-purple-600" sx={{ fontSize: 16 }} />
+                          </div>
+                          <span className="text-sm text-gray-700 font-bold">{classData.kelas}</span>
                         </div>
-                        <span className="text-sm text-gray-700 font-bold">{classData.kelas}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                          <ClassOutlined className="text-indigo-600" sx={{ fontSize: 16 }} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <ClassOutlined className="text-indigo-600" sx={{ fontSize: 16 }} />
+                          </div>
+                          <span className="text-sm text-gray-700 font-semibold">{classData.paralel}</span>
                         </div>
-                        <span className="text-sm text-gray-700 font-semibold">{classData.paralel}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                          <MenuBookOutlined className="text-green-600" sx={{ fontSize: 16 }} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                            <MenuBookOutlined className="text-green-600" sx={{ fontSize: 16 }} />
+                          </div>
+                          <span className="text-sm text-gray-600">{classData.mataPelajaran}</span>
                         </div>
-                        <span className="text-sm text-gray-600">{classData.mataPelajaran}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                          <PeopleOutlineOutlined className="text-orange-600" sx={{ fontSize: 16 }} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                            <PeopleOutlineOutlined className="text-orange-600" sx={{ fontSize: 16 }} />
+                          </div>
+                          <span className="text-sm text-gray-700 font-semibold">{classData.jumlahMurid}</span>
                         </div>
-                        <span className="text-sm text-gray-700 font-semibold">{classData.jumlahMurid}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
-                          <CalendarTodayOutlined className="text-cyan-600" sx={{ fontSize: 16 }} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
+                            <CalendarTodayOutlined className="text-cyan-600" sx={{ fontSize: 16 }} />
+                          </div>
+                          <span className="text-sm text-gray-600">{classData.tahunAjaran}</span>
                         </div>
-                        <span className="text-sm text-gray-600">{classData.tahunAjaran}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleEdit(classData)}
-                          className="w-9 h-9 rounded-lg bg-gradient-to-r from-[#33A1E0] to-[#5BB3E8] flex items-center justify-center text-white hover:shadow-lg transition-all shadow-md"
-                        >
-                          <Edit sx={{ fontSize: 18 }} />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleDelete(classData)}
-                          className="w-9 h-9 rounded-lg bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white hover:shadow-lg transition-all shadow-md"
-                        >
-                          <Delete sx={{ fontSize: 18 }} />
-                        </motion.button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
 
-          {filteredClasses.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 font-medium">Tidak ada data yang ditemukan</p>
-            </div>
-          )}
-        </div>
+            {filteredClasses.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500 font-medium">Tidak ada data yang ditemukan</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* View More Button */}

@@ -8,6 +8,7 @@ interface Admin {
   email: string;
   role: string;
   nama_lengkap: string;
+  sekolah_id?: string;
 }
 
 interface AuthContextType {
@@ -49,8 +50,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       document.cookie = `role=${data.user.role}; path=/;`;
 
       router.push("/dashboard");
-    } catch (error: any) {
-      console.error("Login gagal:", error.message);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Login gagal";
+      console.error("Login gagal:", errorMessage);
       throw error;
     }
   };

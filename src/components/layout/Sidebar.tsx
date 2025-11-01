@@ -2,16 +2,20 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { Dashboard, People, Class, Settings, Logout } from "@mui/icons-material";
+import { usePathname } from "next/navigation";
+import { Dashboard, People, Class, Settings, Logout, School, AdminPanelSettings } from "@mui/icons-material";
 import SidebarItem from "./SidebarItem";
 import SidebarDropdown from "./SidebarDropdown";
 import Swal from "sweetalert2";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Sidebar() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const router = useRouter();
   const pathname = usePathname();
+  const { admin, logout } = useAuth();
+
+  // Check if user is superadmin
+  const isSuperAdmin = admin?.role === "superadmin";
 
   const toggleDropdown = (name: string) => {
     setOpenDropdown(openDropdown === name ? null : name);
@@ -40,9 +44,7 @@ export default function Sidebar() {
     });
 
     if (result.isConfirmed) {
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-      router.push("/masuk");
+      logout(); // Use logout from AuthContext
     }
   };
 
@@ -77,18 +79,27 @@ export default function Sidebar() {
             href="/dashboard"
             active={pathname === "/dashboard"}
           />
-          <SidebarItem
-            icon={<Class sx={{ fontSize: 20 }} />}
-            label="Kelola Sekolah"
-            href="/kelola-sekolah"
-            active={pathname === "/kelola-sekolah"}
-          />
-          <SidebarItem
-            icon={<Settings sx={{ fontSize: 20 }} />}
-            label="Kelola Admin"
-            href="/kelola-admin"
-            active={pathname === "/kelola-admin"}
-          />
+
+          {/* Kelola Sekolah - Hanya untuk Superadmin */}
+          {isSuperAdmin && (
+            <SidebarItem
+              icon={<School sx={{ fontSize: 20 }} />}
+              label="Kelola Sekolah"
+              href="/kelola-sekolah"
+              active={pathname === "/kelola-sekolah"}
+            />
+          )}
+
+          {/* Kelola Admin - Hanya untuk Superadmin */}
+          {isSuperAdmin && (
+            <SidebarItem
+              icon={<AdminPanelSettings sx={{ fontSize: 20 }} />}
+              label="Kelola Admin"
+              href="/kelola-admin"
+              active={pathname === "/kelola-admin"}
+            />
+          )}
+
           <SidebarItem
             icon={<Class sx={{ fontSize: 20 }} />}
             label="Kelola Kelas"
