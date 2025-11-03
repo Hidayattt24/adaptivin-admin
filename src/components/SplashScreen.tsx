@@ -39,7 +39,7 @@ export default function SplashScreen() {
           }}
           className="relative"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#33A1E0] to-[#2288C3] blur-3xl opacity-30 rounded-full" />
+          <div className="absolute inset-0 bg-linear-to-r from-primary to-primary-dark blur-3xl opacity-30 rounded-full" />
           <Image
             src="/logo/logo-with-name.svg"
             alt="Adaptivin Logo"
@@ -80,7 +80,7 @@ export default function SplashScreen() {
                 delay: i * 0.2,
                 ease: "easeInOut",
               }}
-              className="w-2 h-2 rounded-full bg-[#33A1E0]"
+              className="w-2 h-2 rounded-full bg-primary"
             />
           ))}
         </motion.div>

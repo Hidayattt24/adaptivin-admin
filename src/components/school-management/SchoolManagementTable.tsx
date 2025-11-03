@@ -72,7 +72,7 @@ export default function SchoolManagementTable({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-[20px] p-4 lg:p-6 shadow-lg bg-gradient-to-br from-[#33A1E0] to-[#2288C3]"
+      className="rounded-[20px] p-4 lg:p-6 shadow-lg bg-linear-to-br from-primary to-primary-dark"
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -81,7 +81,7 @@ export default function SchoolManagementTable({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onAdd}
-          className="flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-3 bg-white rounded-[15px] text-[#33A1E0] font-semibold hover:bg-gray-50 transition-all shadow-lg text-sm lg:text-base"
+          className="flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-gray-50 transition-all shadow-lg text-sm lg:text-base"
         >
           <Add sx={{ fontSize: 20 }} />
           <span>Tambah Sekolah</span>
@@ -117,7 +117,7 @@ export default function SchoolManagementTable({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-[#33A1E0] to-[#2288C3]">
+              <tr className="bg-linear-to-r from-primary to-primary-dark">
                 <th className="px-4 py-4 text-left">
                   <input
                     type="checkbox"
@@ -152,7 +152,7 @@ export default function SchoolManagementTable({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                    className={`border-b border-gray-100 hover:bg-primary/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                       }`}
                   >
                     <td className="px-4 py-4">
@@ -160,7 +160,7 @@ export default function SchoolManagementTable({
                         type="checkbox"
                         checked={selectedSekolah.includes(sekolah.id)}
                         onChange={() => toggleSelectSekolah(sekolah.id)}
-                        className="w-4 h-4 rounded accent-[#33A1E0] cursor-pointer"
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
                     </td>
                     <td className="px-4 py-4">
@@ -225,7 +225,7 @@ export default function SchoolManagementTable({
             disabled={currentPage === 1}
             className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === 1
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
+                : "bg-white text-primary hover:bg-gray-50 shadow-md"
               }`}
           >
             Sebelumnya
@@ -239,7 +239,7 @@ export default function SchoolManagementTable({
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === page
-                    ? "bg-white text-[#33A1E0] shadow-lg"
+                    ? "bg-white text-primary shadow-lg"
                     : "bg-white/30 text-white hover:bg-white/50"
                   }`}
               >
@@ -255,7 +255,7 @@ export default function SchoolManagementTable({
             disabled={currentPage === totalPages}
             className={`px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-sm lg:text-base ${currentPage === totalPages
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-[#33A1E0] hover:bg-gray-50 shadow-md"
+                : "bg-white text-primary hover:bg-gray-50 shadow-md"
               }`}
           >
             Selanjutnya

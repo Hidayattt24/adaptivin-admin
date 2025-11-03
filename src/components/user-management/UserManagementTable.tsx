@@ -191,8 +191,8 @@ export default function UserManagementTable({
                       setSelectedUsers([]);
                     }}
                     className={`w-full px-5 py-3 text-left transition-all ${effectiveSelectedClass === kelas
-                        ? "bg-primary text-white font-semibold"
-                        : "text-slate-700 hover:bg-slate-100"
+                      ? "bg-primary text-white font-semibold"
+                      : "text-slate-700 hover:bg-slate-100"
                       }`}
                   >
                     {kelas}
@@ -368,12 +368,46 @@ export default function UserManagementTable({
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
                           <SchoolOutlined className="text-green-600" sx={{ fontSize: 16 }} />
                         </div>
-                        <span className="text-sm text-gray-700 font-semibold">
-                          {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
-                        </span>
+                        {role === "guru" && user.kelasAssignments && user.kelasAssignments.length > 1 ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1 mb-1">
+                              <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                {user.kelasAssignments.length} Kelas
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {user.kelasAssignments.map((assignment, idx) => {
+                                const kelasDisplay = assignment.kelasName ??
+                                  formatClassDisplay(assignment.kelasLevel, assignment.kelasRombel);
+                                return (
+                                  <span
+                                    key={idx}
+                                    className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-md border border-green-200"
+                                    title={`${assignment.kelasLevel ?? ""} ${assignment.kelasRombel ?? ""}`.trim()}
+                                  >
+                                    {kelasDisplay}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : role === "guru" && user.kelasAssignments && user.kelasAssignments.length === 1 ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              1 Kelas
+                            </span>
+                            <span className="text-sm text-gray-700 font-semibold">
+                              {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-700 font-semibold">
+                            {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -434,8 +468,8 @@ export default function UserManagementTable({
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={activePage === 1}
             className={`px-4 py-2 rounded-lg font-semibold transition-all ${activePage === 1
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-primary hover:bg-gray-50 shadow-md"
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-white text-primary hover:bg-gray-50 shadow-md"
               }`}
           >
             Sebelumnya
@@ -449,8 +483,8 @@ export default function UserManagementTable({
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentPage(page)}
                 className={`w-10 h-10 rounded-lg font-semibold transition-all ${activePage === page
-                    ? "bg-white text-primary shadow-lg"
-                    : "bg-white/30 text-white hover:bg-white/50"
+                  ? "bg-white text-primary shadow-lg"
+                  : "bg-white/30 text-white hover:bg-white/50"
                   }`}
               >
                 {page}
@@ -464,8 +498,8 @@ export default function UserManagementTable({
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={activePage === totalPages}
             className={`px-4 py-2 rounded-lg font-semibold transition-all ${activePage === totalPages
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-white text-primary hover:bg-gray-50 shadow-md"
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-white text-primary hover:bg-gray-50 shadow-md"
               }`}
           >
             Selanjutnya

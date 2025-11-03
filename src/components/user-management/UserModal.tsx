@@ -24,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import CustomDatePicker from "./CustomDatePicker";
 import CustomSelect from "./CustomSelect";
+import CustomMultiSelect from "./CustomMultiSelect";
 import {
   type ManagedUser,
   type ManagedUserRole,
@@ -48,6 +49,7 @@ interface FormState {
   alamat: string;
   sekolahId: string;
   kelasId: string;
+  kelasIds: string[]; // For guru multi-select
 }
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -75,6 +77,7 @@ const defaultFormState: FormState = {
   alamat: "",
   sekolahId: "",
   kelasId: "",
+  kelasIds: [],
 };
 
 const roleLabelMap: Record<ManagedUserRole, string> = {
@@ -186,6 +189,8 @@ export default function UserModal({
     }
 
     if (mode === "edit" && user) {
+      const kelasIdsValue = user.kelasAssignments.map((k) => k.kelasId).filter((id): id is string => id !== null);
+
       setFormState({
         identifier: user.identifier ?? "",
         namaLengkap: user.nama ?? "",
@@ -196,6 +201,7 @@ export default function UserModal({
         alamat: user.alamat ?? "",
         sekolahId: user.sekolahId ?? "",
         kelasId: user.kelasId ?? "",
+        kelasIds: kelasIdsValue,
       });
     } else {
       setFormState(defaultFormState);
@@ -329,8 +335,17 @@ export default function UserModal({
       nextErrors.sekolahId = "Sekolah wajib dipilih";
     }
 
-    if (kelasOptions.length > 0 && !formState.kelasId) {
-      nextErrors.kelasId = "Kelas wajib dipilih";
+    // Validation untuk kelas berbeda antara guru dan siswa
+    if (role === "siswa") {
+      if (kelasOptions.length > 0 && !formState.kelasId) {
+        nextErrors.kelasId = "Kelas wajib dipilih";
+      }
+    } else {
+      // Untuk guru, kelas tidak wajib (boleh tidak mengajar kelas apapun)
+      // Jika ingin wajib minimal 1 kelas, uncomment kode di bawah:
+      // if (kelasOptions.length > 0 && formState.kelasIds.length === 0) {
+      //   nextErrors.kelasId = "Minimal pilih 1 kelas yang diajar";
+      // }
     }
 
     return nextErrors;
@@ -357,6 +372,11 @@ export default function UserModal({
     const trimmedNama = formState.namaLengkap.trim();
     const trimmedEmail = formState.email.trim();
 
+    // Tentukan kelasId berdasarkan role
+    const finalKelasId = role === "siswa"
+      ? (formState.kelasId || null)
+      : (formState.kelasIds.length > 0 ? formState.kelasIds[0] : null);
+
     const submission: UserModalSubmission =
       mode === "create"
         ? {
@@ -370,8 +390,9 @@ export default function UserModal({
             alamat: formState.alamat || undefined,
             tanggalLahir: formState.tanggalLahir || undefined,
             sekolahId: formState.sekolahId,
-            kelasId: formState.kelasId || null,
+            kelasId: finalKelasId,
             identifier: trimmedIdentifier,
+            kelasIds: role === "guru" ? formState.kelasIds : undefined,
           },
         }
         : {
@@ -384,8 +405,9 @@ export default function UserModal({
             alamat: formState.alamat || undefined,
             tanggalLahir: formState.tanggalLahir || null,
             sekolahId: formState.sekolahId,
-            kelasId: formState.kelasId || null,
+            kelasId: finalKelasId,
             identifier: trimmedIdentifier || null,
+            kelasIds: role === "guru" ? formState.kelasIds : undefined,
           },
         };
 
@@ -607,33 +629,68 @@ export default function UserModal({
                     )}
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-gray-700">
-                      Kelas
-                    </label>
-                    <CustomSelect
-                      value={formState.kelasId}
-                      onChange={handleSelectChange("kelasId")}
-                      options={kelasOptions}
-                      placeholder={
-                        !formState.sekolahId
-                          ? "Pilih sekolah terlebih dahulu"
-                          : isKelasLoading
-                            ? "Memuat data kelas..."
-                            : kelasOptions.length > 0
-                              ? "Pilih kelas"
-                              : "Tidak ada data kelas"
-                      }
-                      icon={<SchoolOutlined sx={{ fontSize: 20 }} />}
-                      error={errors.kelasId}
-                      disabled={isKelasLoading || !formState.sekolahId}
-                    />
-                    {errors.kelasId && (
-                      <p className="mt-2 text-sm text-red-500">
-                        {errors.kelasId}
-                      </p>
-                    )}
-                  </div>
+                  {role === "siswa" ? (
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-gray-700">
+                        Kelas
+                      </label>
+                      <CustomSelect
+                        value={formState.kelasId}
+                        onChange={handleSelectChange("kelasId")}
+                        options={kelasOptions}
+                        placeholder={
+                          !formState.sekolahId
+                            ? "Pilih sekolah terlebih dahulu"
+                            : isKelasLoading
+                              ? "Memuat data kelas..."
+                              : kelasOptions.length > 0
+                                ? "Pilih kelas"
+                                : "Tidak ada data kelas"
+                        }
+                        icon={<SchoolOutlined sx={{ fontSize: 20 }} />}
+                        error={errors.kelasId}
+                        disabled={isKelasLoading || !formState.sekolahId}
+                      />
+                      {errors.kelasId && (
+                        <p className="mt-2 text-sm text-red-500">
+                          {errors.kelasId}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-gray-700">
+                        Kelas yang Diajar
+                        <span className="ml-2 text-xs font-normal text-gray-500">
+                          (Bisa memilih lebih dari satu)
+                        </span>
+                      </label>
+                      <CustomMultiSelect
+                        value={formState.kelasIds}
+                        onChange={(value) =>
+                          setFormState((prev) => ({ ...prev, kelasIds: value }))
+                        }
+                        options={kelasOptions}
+                        placeholder={
+                          !formState.sekolahId
+                            ? "Pilih sekolah terlebih dahulu"
+                            : isKelasLoading
+                              ? "Memuat data kelas..."
+                              : kelasOptions.length > 0
+                                ? "Pilih kelas yang diajar"
+                                : "Tidak ada data kelas"
+                        }
+                        icon={<SchoolOutlined sx={{ fontSize: 20 }} />}
+                        error={errors.kelasId}
+                        disabled={isKelasLoading || !formState.sekolahId}
+                      />
+                      {errors.kelasId && (
+                        <p className="mt-2 text-sm text-red-500">
+                          {errors.kelasId}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </section>
 

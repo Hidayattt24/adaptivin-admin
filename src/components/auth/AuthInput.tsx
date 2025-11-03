@@ -42,12 +42,12 @@ export default function AuthInput({
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-[#33A1E0]">
+      <label htmlFor={id} className="block text-sm font-medium text-primary">
         {label}
       </label>
       <div className="relative">
         {IconComponent && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#33A1E0]/60">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/60">
             <IconComponent sx={{ fontSize: 20 }} />
           </div>
         )}
@@ -61,9 +61,9 @@ export default function AuthInput({
           required={required}
           minLength={minLength}
           className={`
-            w-full py-3 px-4 bg-white border-2 border-[#33A1E0] rounded-full
+            w-full py-3 px-4 bg-white border-2 border-primary rounded-full
             text-gray-700 placeholder-gray-400
-            focus:outline-none focus:border-[#2288C3] focus:ring-2 focus:ring-[#33A1E0]/20
+            focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20
             transition-all duration-200
             ${IconComponent ? "pl-12" : ""}
             ${hasToggle ? "pr-12" : ""}
@@ -73,7 +73,7 @@ export default function AuthInput({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[#33A1E0]/60 hover:text-[#33A1E0] transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary transition-colors"
           >
             {showPassword ? (
               <VisibilityOff sx={{ fontSize: 20 }} />

@@ -100,7 +100,7 @@ export default function CustomDatePicker({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-left flex items-center gap-3 ${
+        className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-left flex items-center gap-3 ${
           error
             ? "border-red-500 focus:border-red-500"
             : isOpen

@@ -13,38 +13,36 @@ export default function MobileWarning() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
-    // Check if warning has been shown in this session
     const shownInSession = sessionStorage.getItem("mobileWarningShown");
-    // Check if user has permanently dismissed the warning
     const permanentlyDismissed = localStorage.getItem("mobileWarningDismissed");
-    
-    // Only show if not shown in this session AND not permanently dismissed
+
     if (!shownInSession && !permanentlyDismissed) {
-      // Mark as shown in this session
       sessionStorage.setItem("mobileWarningShown", "true");
-      
-      // Show warning after a short delay
+
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1000);
 
       return () => clearTimeout(timer);
     } else {
-      setIsDismissed(true);
+      // 🔧 perbaikan di sini
+      const timeout = setTimeout(() => {
+        setIsDismissed(true);
+      }, 0);
+
+      return () => clearTimeout(timeout);
     }
   }, []);
 
   const handleDismiss = () => {
     setIsVisible(false);
     setIsDismissed(true);
-    // Save to localStorage for permanent dismissal
     localStorage.setItem("mobileWarningDismissed", "true");
   };
 
   const handleDismissTemporary = () => {
     setIsVisible(false);
     setIsDismissed(true);
-    // Already marked in sessionStorage, so won't show again this session
   };
 
   if (isDismissed) return null;
@@ -72,7 +70,7 @@ export default function MobileWarning() {
           >
             <div className="bg-white rounded-[25px] shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#33A1E0] to-[#2288C3] p-6 relative">
+              <div className="bg-linear-to-r from-primary to-primary-dark p-6 relative">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={handleDismissTemporary}
@@ -92,16 +90,16 @@ export default function MobileWarning() {
               {/* Content */}
               <div className="p-6">
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 bg-blue-50 rounded-[15px] flex items-center justify-center flex-shrink-0">
-                    <ComputerOutlined className="text-[#33A1E0]" sx={{ fontSize: 32 }} />
+                  <div className="w-16 h-16 bg-blue-50 rounded-[15px] flex items-center justify-center shrink-0">
+                    <ComputerOutlined className="text-primary" sx={{ fontSize: 32 }} />
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-800 mb-2">
                       Pengalaman Lebih Baik di Desktop
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
-                      Untuk pengalaman terbaik dan akses ke semua fitur, kami merekomendasikan menggunakan 
-                      <span className="font-semibold text-[#33A1E0]"> laptop atau PC</span>.
+                      Untuk pengalaman terbaik dan akses ke semua fitur, kami merekomendasikan menggunakan
+                      <span className="font-semibold text-primary"> laptop atau PC</span>.
                     </p>
                   </div>
                 </div>
@@ -111,15 +109,15 @@ export default function MobileWarning() {
                   <p className="text-xs font-semibold text-gray-700 mb-3">Keuntungan menggunakan Desktop:</p>
                   <ul className="space-y-2 text-xs text-gray-600">
                     <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-[#33A1E0] rounded-full"></span>
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
                       Tampilan lebih luas dan nyaman
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-[#33A1E0] rounded-full"></span>
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
                       Akses lebih cepat ke semua menu
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-[#33A1E0] rounded-full"></span>
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
                       Fitur lengkap dan optimal
                     </li>
                   </ul>
@@ -131,7 +129,7 @@ export default function MobileWarning() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleDismiss}
-                    className="w-full py-3 bg-gradient-to-r from-[#33A1E0] to-[#2288C3] text-white font-semibold rounded-[12px] shadow-lg"
+                    className="w-full py-3 bg-linear-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg"
                   >
                     Mengerti, Jangan Tampilkan Lagi
                   </motion.button>
@@ -139,7 +137,7 @@ export default function MobileWarning() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleDismissTemporary}
-                    className="w-full py-3 border-2 border-gray-200 text-gray-700 font-semibold rounded-[12px] hover:bg-gray-50 transition-colors"
+                    className="w-full py-3 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
                   >
                     Lanjutkan di Mobile
                   </motion.button>

@@ -135,7 +135,7 @@ export default function Sidebar() {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-[10px] transition-all bg-red-500 text-white hover:bg-red-600 hover:shadow-md"
           >
-            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 bg-white/15">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-white/15">
               <Logout className="text-white" sx={{ fontSize: 16 }} />
             </div>
             <span className="text-[15px] font-medium leading-tight">

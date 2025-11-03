@@ -113,12 +113,12 @@ export default function DaftarPage() {
               id="agreeTerms"
               checked={agreeTerms}
               onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="mt-1 w-4 h-4 text-[#33A1E0] border-2 border-gray-300 rounded focus:ring-2 focus:ring-[#33A1E0]/50"
+              className="mt-1 w-4 h-4 text-primary border-2 border-gray-300 rounded focus:ring-2 focus:ring-primary/50"
               required
             />
             <label htmlFor="agreeTerms" className="ml-3 text-sm text-gray-600">
               Saya menyetujui{" "}
-              <a href="#" className="text-[#33A1E0] hover:underline font-medium">
+              <a href="#" className="text-primary hover:underline font-medium">
                 persyaratan dan ketentuan
               </a>{" "}
               yang berlaku
@@ -140,7 +140,7 @@ export default function DaftarPage() {
           Sudah punya akun?{" "}
           <Link
             href="/masuk"
-            className="text-[#33A1E0] font-medium hover:underline transition-all"
+            className="text-primary font-medium hover:underline transition-all"
           >
             Masuk di sini
           </Link>

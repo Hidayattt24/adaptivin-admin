@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Search,
   PersonOutline,
@@ -13,7 +13,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "../user-management/EmptyState";
 import type { AdminData } from "@/lib/api/user";
-import { getSekolahById } from "@/lib/api/sekolah";
 
 interface AdminManagementTableProps {
   admins: AdminData[];
@@ -31,30 +30,6 @@ export default function AdminManagementTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAdmins, setSelectedAdmins] = useState<string[]>([]);
-  const [sekolahMap, setSekolahMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const fetchSekolahNames = async () => {
-      const newMap: Record<string, string> = {};
-
-      // ambil hanya ID unik agar tidak fetch berulang
-      const uniqueIds = Array.from(new Set(admins.map(a => a.sekolah_id).filter(Boolean)));
-
-      for (const id of uniqueIds) {
-        try {
-          const sekolah = await getSekolahById(id);
-          newMap[id] = sekolah?.nama_sekolah || "-";
-        } catch (err) {
-          console.error("Gagal mengambil sekolah:", id, err);
-          newMap[id] = "-";
-        }
-      }
-
-      setSekolahMap(newMap);
-    };
-
-    if (admins.length > 0) fetchSekolahNames();
-  }, [admins]);
 
   const itemsPerPage = 10;
 
@@ -216,7 +191,7 @@ export default function AdminManagementTable({
                       <span className="text-sm text-gray-700">{admin.email}</span>
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell">
-                      <span className="text-sm text-gray-700 font-medium">{sekolahMap[admin.sekolah_id] || "-"}</span>
+                      <span className="text-sm text-gray-700 font-medium">{admin.sekolahName || "-"}</span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">

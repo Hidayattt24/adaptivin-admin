@@ -47,7 +47,7 @@ export default function PengaturanPage() {
     <ResponsiveLayout title="Pengaturan">
       {/* Header */}
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-[#33A1E0] mb-2">
+        <h1 className="text-2xl lg:text-3xl font-bold text-primary mb-2">
           Pengaturan Akun
         </h1>
         <p className="text-gray-600 text-sm">
@@ -73,7 +73,7 @@ export default function PengaturanPage() {
                 }`}
             >
               {/* Background Gradient */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${isActive ? tab.color : "from-gray-100 to-gray-200"
+              <div className={`absolute inset-0 bg-linear-to-br ${isActive ? tab.color : "from-gray-100 to-gray-200"
                 } transition-all`}></div>
 
               {/* Content */}

@@ -79,7 +79,7 @@ export default function ProfileSettings() {
         background: "#ffffff",
         customClass: {
           popup: "rounded-[20px] shadow-2xl",
-          title: "text-[#33A1E0] text-2xl font-semibold",
+          title: "text-primary text-2xl font-semibold",
           confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
         },
       });
@@ -115,9 +115,9 @@ export default function ProfileSettings() {
       </div>
 
       {/* Info Card */}
-      <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-[15px] border border-blue-100">
+      <div className="mb-8 p-6 bg-linear-to-br from-blue-50 to-indigo-50 rounded-[15px] border border-blue-100">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#33A1E0] to-[#2288C3] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+          <div className="w-16 h-16 rounded-full bg-linear-to-br from-primary to-primary-dark flex items-center justify-center text-white text-2xl font-bold shadow-lg">
             {formData.nama_lengkap.charAt(0) || "A"}
           </div>
           <div>
@@ -133,7 +133,7 @@ export default function ProfileSettings() {
         {/* Nama */}
         <div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <PersonOutline className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <PersonOutline className="text-primary" sx={{ fontSize: 18 }} />
             Nama Lengkap
           </label>
           <input
@@ -141,7 +141,7 @@ export default function ProfileSettings() {
             name="nama_lengkap"
             value={formData.nama_lengkap}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-[12px] border-2 border-gray-200 focus:border-[#33A1E0] transition-all text-gray-900 font-medium focus:outline-none"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
             placeholder="Masukkan nama lengkap"
           />
         </div>
@@ -149,14 +149,14 @@ export default function ProfileSettings() {
         {/* Jenis Kelamin */}
         <div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <WcOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <WcOutlined className="text-primary" sx={{ fontSize: 18 }} />
             Jenis Kelamin
           </label>
           <select
             name="jenisKelamin"
             value={formData.jenisKelamin}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-[12px] border-2 border-gray-200 focus:border-[#33A1E0] transition-all text-gray-900 font-medium focus:outline-none"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
           >
             <option value="">Pilih Jenis Kelamin</option>
             <option value="laki-laki">Laki-laki</option>
@@ -167,7 +167,7 @@ export default function ProfileSettings() {
         {/* Email (Read-only) */}
         <div>
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <EmailOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <EmailOutlined className="text-primary" sx={{ fontSize: 18 }} />
             Email
           </label>
           <input
@@ -175,7 +175,7 @@ export default function ProfileSettings() {
             name="email"
             value={formData.email}
             disabled
-            className="w-full px-4 py-3 rounded-[12px] border-2 border-gray-200 bg-gray-50 text-gray-500 font-medium cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-500 font-medium cursor-not-allowed"
             placeholder="Email"
           />
           <p className="text-xs text-gray-500 mt-1">Email tidak dapat diubah</p>
@@ -190,14 +190,14 @@ export default function ProfileSettings() {
             type="text"
             value={admin?.role === "superadmin" ? "Super Administrator" : "Administrator"}
             disabled
-            className="w-full px-4 py-3 rounded-[12px] border-2 border-gray-200 bg-gray-50 text-gray-500 font-medium cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-500 font-medium cursor-not-allowed"
           />
         </div>
 
         {/* Alamat - Full Width */}
         <div className="md:col-span-2">
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <LocationOnOutlined className="text-[#33A1E0]" sx={{ fontSize: 18 }} />
+            <LocationOnOutlined className="text-primary" sx={{ fontSize: 18 }} />
             Alamat
           </label>
           <textarea
@@ -205,7 +205,7 @@ export default function ProfileSettings() {
             value={formData.alamat}
             onChange={handleChange}
             rows={3}
-            className="w-full px-4 py-3 rounded-[12px] border-2 border-gray-200 focus:border-[#33A1E0] transition-all text-gray-900 font-medium focus:outline-none resize-none"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none resize-none"
             placeholder="Masukkan alamat lengkap"
           />
         </div>
@@ -218,7 +218,7 @@ export default function ProfileSettings() {
           whileTap={{ scale: 0.95 }}
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 rounded-[12px] bg-gradient-to-r from-[#33A1E0] to-[#2288C3] text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-primary to-primary-dark text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save sx={{ fontSize: 20 }} />
           <span>{isSaving ? "Menyimpan..." : "Simpan Perubahan"}</span>

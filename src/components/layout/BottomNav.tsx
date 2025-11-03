@@ -89,10 +89,10 @@ export default function BottomNav() {
 
               <Icon
                 sx={{ fontSize: 24 }}
-                className={active ? "text-[#33A1E0]" : "text-gray-400"}
+                className={active ? "text-primary" : "text-gray-400"}
               />
               <span
-                className={`text-xs font-medium ${active ? "text-[#33A1E0]" : "text-gray-400"
+                className={`text-xs font-medium ${active ? "text-primary" : "text-gray-400"
                   }`}
               >
                 {item.label}

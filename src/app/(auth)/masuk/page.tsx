@@ -73,16 +73,6 @@ export default function MasukPage() {
             />
           </div>
         </form>
-
-        {/* <p className="text-center text-sm text-gray-500 mt-6">
-          Belum punya akun?{" "}
-          <Link
-            href="/daftar"
-            className="text-[#33A1E0] font-medium hover:underline transition-all"
-          >
-            Daftar sekarang
-          </Link>
-        </p> */}
       </AuthCard>
     </AuthLayout>
   );

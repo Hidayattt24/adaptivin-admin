@@ -41,9 +41,6 @@ interface ApiErrorResponse {
 // Login (bisa untuk admin/guru/siswa, tergantung endpoint backend kamu)
 export const loginAPI = async (email: string, password: string) => {
   try {
-    // Backend: POST /api/auth/login
-    // baseURL sudah http://localhost:5000/api
-    // Jadi endpoint: /auth/login (TANPA /api lagi!)
     const response = await api.post("/auth/login", { email, password });
     return response.data;
   } catch (error) {
@@ -56,11 +53,17 @@ export const loginAPI = async (email: string, password: string) => {
   }
 };
 
-// Logout (opsional — kalau backend kamu handle revoke token)
+// Logout - invalidate token di backend
 export const logoutAPI = async () => {
   try {
-    await api.post("/auth/logout");
+    const response = await api.post("/auth/logout");
+    return response.data;
   } catch (error) {
-    console.warn("Logout warning:", error);
+    if (axios.isAxiosError(error)) {
+      const errorData = error.response?.data as ApiErrorResponse;
+      console.error("Logout API error:", errorData);
+      throw new Error(errorData?.error || errorData?.message || "Logout gagal");
+    }
+    throw new Error("Logout gagal");
   }
 };

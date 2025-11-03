@@ -50,18 +50,18 @@ export default function CustomSelect({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full px-4 py-3 rounded-[12px] border-2 transition-all text-left flex items-center justify-between ${
+        className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-left flex items-center justify-between ${
           disabled
             ? "bg-gray-100 border-gray-200 cursor-not-allowed opacity-60"
             : error
             ? "border-red-500 focus:border-red-500"
             : isOpen
-            ? "border-[#33A1E0] shadow-md"
+            ? "border-primary shadow-md"
             : "border-gray-200 hover:border-gray-300"
         }`}
       >
         <div className="flex items-center gap-2">
-          {icon && <span className="text-[#33A1E0]">{icon}</span>}
+          {icon && <span className="text-primary">{icon}</span>}
           <span className={selectedOption ? "text-gray-900 font-medium" : "text-gray-400"}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
@@ -81,7 +81,7 @@ export default function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute z-50 w-full mt-2 bg-white rounded-[12px] shadow-2xl border border-gray-100 overflow-hidden"
+            className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden"
           >
             <div className="max-h-60 overflow-y-auto">
               {options.map((option, index) => (
@@ -95,12 +95,12 @@ export default function CustomSelect({
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-4 py-3 text-left hover:bg-[#33A1E0]/10 transition-all flex items-center justify-between group ${
-                    value === option.value ? "bg-[#33A1E0]/5" : ""
+                  className={`w-full px-4 py-3 text-left hover:bg-primary/10 transition-all flex items-center justify-between group ${
+                    value === option.value ? "bg-primary/5" : ""
                   }`}
                 >
                   <span className={`font-medium ${
-                    value === option.value ? "text-[#33A1E0]" : "text-gray-700"
+                    value === option.value ? "text-primary" : "text-gray-700"
                   }`}>
                     {option.label}
                   </span>
@@ -110,7 +110,7 @@ export default function CustomSelect({
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     >
-                      <Check className="text-[#33A1E0]" sx={{ fontSize: 20 }} />
+                      <Check className="text-primary" sx={{ fontSize: 20 }} />
                     </motion.div>
                   )}
                 </motion.button>

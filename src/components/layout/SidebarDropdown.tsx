@@ -37,18 +37,18 @@ export default function SidebarDropdown({
           transition-all duration-300 ease-in-out group
           ${
             isActive
-              ? "bg-[#2288C3] border-2 border-white text-white shadow-lg"
-              : "bg-white text-[#33A1E0] hover:bg-gray-50 hover:shadow-md"
+              ? "bg-primary-dark border-2 border-white text-white shadow-lg"
+              : "bg-white text-primary hover:bg-gray-50 hover:shadow-md"
           }
         `}
       >
         <div className="flex items-center gap-3">
           <div
-            className={`w-[28px] h-[28px] rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-              isActive ? "bg-white/30 group-hover:bg-white/40" : "bg-[#33A1E0]/15 group-hover:bg-[#33A1E0]/25"
+            className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
+              isActive ? "bg-white/30 group-hover:bg-white/40" : "bg-primary/15 group-hover:bg-primary/25"
             }`}
           >
-            <span className={isActive ? "text-white" : "text-[#33A1E0]"}>
+            <span className={isActive ? "text-white" : "text-primary"}>
               {icon}
             </span>
           </div>
@@ -60,7 +60,7 @@ export default function SidebarDropdown({
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
         >
-          <ExpandMore className={isActive ? "text-white" : "text-[#33A1E0]"} />
+          <ExpandMore className={isActive ? "text-white" : "text-primary"} />
         </motion.div>
       </button>
 
@@ -84,7 +84,7 @@ export default function SidebarDropdown({
                     ${
                       pathname === item.href
                         ? "bg-[#1E7AAF] text-white font-medium shadow-md"
-                        : "bg-white/60 text-[#33A1E0] hover:bg-white hover:shadow-sm"
+                        : "bg-white/60 text-primary hover:bg-white hover:shadow-sm"
                     }
                   `}
                 >

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   PersonOutline
 } from "@mui/icons-material";
@@ -13,12 +13,12 @@ export default function MobileHeader({ title }: { title: string }) {
 
   return (
     <>
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-[#33A1E0] to-[#2288C3] shadow-lg">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-linear-to-r from-primary to-primary-dark shadow-lg">
         <div className="flex items-center justify-between px-4 py-4">
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-[12px] flex items-center justify-center shadow-md">
-              <span className="text-[#33A1E0] font-bold text-lg">A</span>
+              <span className="text-primary font-bold text-lg">A</span>
             </div>
             <div>
               <h1 className="text-white font-bold text-lg leading-tight">{title}</h1>

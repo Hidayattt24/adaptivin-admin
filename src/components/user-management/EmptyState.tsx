@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { SearchOff, Inbox } from "@mui/icons-material";
+import { SearchOff } from "@mui/icons-material";
 
 interface EmptyStateProps {
   message?: string;
@@ -36,7 +36,7 @@ export default function EmptyState({
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute inset-0 bg-[#33A1E0]/20 rounded-full blur-xl"
+          className="absolute inset-0 bg-primary/20 rounded-full blur-xl"
         />
 
         <motion.div
@@ -48,7 +48,7 @@ export default function EmptyState({
             repeat: Infinity,
             ease: "linear"
           }}
-          className="relative w-32 h-32 rounded-full bg-gradient-to-br from-[#33A1E0]/10 to-[#2288C3]/10 flex items-center justify-center"
+          className="relative w-32 h-32 rounded-full bg-linear-to-br from-primary/10 to-primary-dark/10 flex items-center justify-center"
         >
           <motion.div
             animate={{
@@ -60,7 +60,7 @@ export default function EmptyState({
               ease: "easeInOut"
             }}
           >
-            <SearchOff sx={{ fontSize: 60 }} className="text-[#33A1E0]/50" />
+            <SearchOff sx={{ fontSize: 60 }} className="text-primary/50" />
           </motion.div>
         </motion.div>
 
@@ -81,7 +81,7 @@ export default function EmptyState({
               delay: i * 0.2,
               ease: "easeOut"
             }}
-            className="absolute top-1/2 left-1/2 w-2 h-2 bg-[#33A1E0] rounded-full"
+            className="absolute top-1/2 left-1/2 w-2 h-2 bg-primary rounded-full"
           />
         ))}
       </motion.div>
@@ -123,7 +123,7 @@ export default function EmptyState({
               delay: i * 0.2,
               ease: "easeInOut"
             }}
-            className="h-1 w-16 bg-gradient-to-r from-[#33A1E0] to-[#2288C3] rounded-full"
+            className="h-1 w-16 bg-linear-to-r from-primary to-primary-dark rounded-full"
           />
         ))}
       </div>

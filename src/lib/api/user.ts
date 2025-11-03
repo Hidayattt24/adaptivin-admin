@@ -10,6 +10,7 @@ interface AdminResponse {
   nama_lengkap?: Nullable<string>;
   jenis_kelamin?: Nullable<string>;
   sekolah_id?: Nullable<string>;
+  sekolah_name?: Nullable<string>;
   alamat?: Nullable<string>;
   email?: Nullable<string>;
   role?: Nullable<string>;
@@ -33,6 +34,7 @@ export interface AdminData {
   email: string;
   jenisKelamin: string;
   sekolah_id: string;
+  sekolahName?: string;
   alamat: string;
   role?: string;
   created_at?: string;
@@ -58,6 +60,7 @@ function transformAdmin(
     email: admin.email ?? fallback.email ?? "",
     jenisKelamin: admin.jenis_kelamin ?? fallback.jenisKelamin ?? "",
     sekolah_id: admin.sekolah_id ?? fallback.sekolah_id ?? "",
+    sekolahName: admin.sekolah_name ?? undefined,
     alamat: admin.alamat ?? fallback.alamat ?? "",
     role: admin.role ?? undefined,
     created_at: admin.created_at ?? undefined,
@@ -270,6 +273,7 @@ export interface CreateManagedUserPayload {
   sekolahId: string;
   kelasId?: string | null;
   identifier: string;
+  kelasIds?: string[]; // For guru multi-class assignment
 }
 
 export async function createManagedUser(
@@ -286,6 +290,7 @@ export async function createManagedUser(
     sekolahId,
     kelasId,
     identifier,
+    kelasIds,
   } = payload;
 
   const backendPayload: Record<string, unknown> = {
@@ -306,6 +311,11 @@ export async function createManagedUser(
     backendPayload.nip = identifier;
   }
 
+  // If guru with multiple classes
+  if (role === "guru" && kelasIds && kelasIds.length > 0) {
+    backendPayload.kelas_ids = kelasIds;
+  }
+
   const res = await api.post("/users", backendPayload);
   return transformManagedUser(res.data.user);
 }
@@ -319,6 +329,7 @@ export interface UpdateManagedUserPayload {
   sekolahId?: string;
   kelasId?: string | null;
   identifier?: string | null;
+  kelasIds?: string[]; // For guru multi-class assignment
 }
 
 export async function updateManagedUser(
@@ -334,6 +345,7 @@ export async function updateManagedUser(
     sekolahId,
     kelasId,
     identifier,
+    kelasIds,
   } = payload;
 
   const backendPayload: Record<string, unknown> = {
@@ -353,6 +365,11 @@ export async function updateManagedUser(
     } else {
       backendPayload.nip = identifier;
     }
+  }
+
+  // If guru with multiple classes
+  if (role === "guru" && kelasIds !== undefined) {
+    backendPayload.kelas_ids = kelasIds;
   }
 
   const res = await api.put(`/users/${id}`, backendPayload);

@@ -35,7 +35,7 @@ export default function AuthButton({
         disabled:opacity-50 disabled:cursor-not-allowed
         ${
           primary
-            ? "bg-gradient-to-r from-[#33A1E0] to-[#2288C3] text-white shadow-md hover:shadow-lg"
+            ? "bg-linear-to-r from-primary to-primary-dark text-white shadow-md hover:shadow-lg"
             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
         }
       `}

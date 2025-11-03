@@ -22,7 +22,7 @@ export default function AuthHeader({ title, subtitle, showLogo = true }: AuthHea
           />
         </div>
       )}
-      <h1 className="text-2xl font-semibold text-[#33A1E0]">
+      <h1 className="text-2xl font-semibold text-primary">
         {title}
       </h1>
       <p className="text-sm text-gray-500">

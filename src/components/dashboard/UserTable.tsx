@@ -29,7 +29,7 @@ interface User {
   username: string;
   password: string;
   jenisKelamin: string;
-  role: "Murid" | "Guru" | "Admin";
+  role: "Siswa" | "Guru" | "Admin";
 }
 
 export default function UserTable() {
@@ -45,8 +45,8 @@ export default function UserTable() {
 
   // Filter roles based on admin type
   const roleOptions = isSuperAdmin
-    ? ["Semua", "Admin", "Guru", "Murid"]
-    : ["Semua", "Guru", "Murid"];
+    ? ["Semua", "Admin", "Guru", "Siswa"]
+    : ["Semua", "Guru", "Siswa"];
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -67,7 +67,7 @@ export default function UserTable() {
             alamat: a.alamat || "-",
             kelas: "-",
             paralel: "-",
-            sekolah: "-",
+            sekolah: a.sekolahName || "-",
             username: a.email || "N/A",
             password: "••••••",
             jenisKelamin: a.jenisKelamin || "-",
@@ -78,20 +78,55 @@ export default function UserTable() {
 
         // Fetch managed users (guru and siswa)
         const managedUsers = await getAllUsers();
-        const managedUserData: User[] = managedUsers.map((u: ManagedUser) => ({
-          id: u.id,
-          nisn: u.identifier || "-",
-          nama: u.nama || "N/A",
-          tanggalLahir: u.tanggalLahir ? new Date(u.tanggalLahir).toLocaleDateString("id-ID") : "-",
-          alamat: u.alamat || "-",
-          kelas: u.kelasAssignments?.[0]?.kelasLevel || "-",
-          paralel: u.kelasAssignments?.[0]?.kelasRombel || "-",
-          sekolah: u.sekolahName || "-",
-          username: u.email || "N/A",
-          password: "••••••",
-          jenisKelamin: u.jenisKelamin || "-",
-          role: u.role === "guru" ? "Guru" : "Murid",
-        }));
+        const managedUserData: User[] = managedUsers.map((u: ManagedUser) => {
+          // Format kelas untuk guru (bisa multiple) dan siswa (single)
+          let kelasDisplay = "-";
+          let paralelDisplay = "-";
+
+          if (u.kelasAssignments && u.kelasAssignments.length > 0) {
+            if (u.role === "guru" && u.kelasAssignments.length > 1) {
+              // Guru dengan multiple kelas: tampilkan semua
+              const kelasNames = u.kelasAssignments
+                .map(k => {
+                  // Prioritas: gunakan kelasName jika ada (sudah lengkap), 
+                  // atau gabung kelasLevel + kelasRombel
+                  if (k.kelasName) {
+                    return k.kelasName;
+                  }
+                  const parts = [k.kelasLevel, k.kelasRombel].filter(Boolean);
+                  return parts.length > 0 ? parts.join(" ") : null;
+                })
+                .filter(Boolean);
+              kelasDisplay = kelasNames.length > 0 ? kelasNames.join(", ") : "-";
+              paralelDisplay = ""; // Tidak pakai paralel untuk multi kelas
+            } else {
+              // Siswa atau guru dengan 1 kelas: tampilkan biasa
+              // Jika ada kelasName, gunakan itu. Jika tidak, gunakan kelasLevel + kelasRombel terpisah
+              if (u.kelasAssignments[0]?.kelasName) {
+                kelasDisplay = u.kelasAssignments[0].kelasName;
+                paralelDisplay = ""; // Sudah termasuk di kelasName
+              } else {
+                kelasDisplay = u.kelasAssignments[0]?.kelasLevel || "-";
+                paralelDisplay = u.kelasAssignments[0]?.kelasRombel || "-";
+              }
+            }
+          }
+
+          return {
+            id: u.id,
+            nisn: u.identifier || "-",
+            nama: u.nama || "N/A",
+            tanggalLahir: u.tanggalLahir ? new Date(u.tanggalLahir).toLocaleDateString("id-ID") : "-",
+            alamat: u.alamat || "-",
+            kelas: kelasDisplay,
+            paralel: paralelDisplay,
+            sekolah: u.sekolahName || "-",
+            username: u.email || "N/A",
+            password: "••••••",
+            jenisKelamin: u.jenisKelamin || "-",
+            role: u.role === "guru" ? "Guru" : "Siswa",
+          };
+        });
 
         fetchedUsers = [...fetchedUsers, ...managedUserData];
         setUsers(fetchedUsers);
@@ -104,13 +139,6 @@ export default function UserTable() {
 
     fetchUsers();
   }, [admin, isSuperAdmin]);
-
-  // const togglePasswordVisibility = (id: string) => {
-  //   setVisiblePasswords(prev => ({
-  //     ...prev,
-  //     [id]: !prev[id]
-  //   }));
-  // };
 
   // Filter users based on search and role
   const filteredUsers = useMemo(() => {
@@ -310,10 +338,32 @@ export default function UserTable() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
                             <SchoolOutlined className="text-green-600" sx={{ fontSize: 16 }} />
                           </div>
-                          <span className="text-sm text-gray-700 font-semibold">{user.kelas} {user.paralel}</span>
+                          {user.role === "Guru" && user.kelas.includes(",") ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 mb-1">
+                                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                  {user.kelas.split(", ").length} Kelas
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {user.kelas.split(", ").map((kelas, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-md border border-green-200"
+                                  >
+                                    {kelas}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-700 font-semibold">
+                              {user.kelas}{user.paralel ? ` ${user.paralel}` : ""}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -342,7 +392,13 @@ export default function UserTable() {
                       </td>
                       <td className="px-4 py-4">
                         <span
-                          className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm ${user.role === "Murid" ? "bg-linear-to-r from-green-500 to-green-600" : "bg-gradient-to-r from-blue-500 to-blue-600"
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm ${user.role === "Siswa"
+                            ? "bg-linear-to-r from-green-500 to-green-600"
+                            : user.role === "Guru"
+                              ? "bg-linear-to-r from-blue-500 to-blue-600"
+                              : user.role === "Admin"
+                                ? "bg-linear-to-r from-orange-500 to-orange-600"
+                                : "bg-linear-to-r from-gray-500 to-gray-600"
                             }`}
                         >
                           {user.role}

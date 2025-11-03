@@ -184,7 +184,7 @@ export default function SecuritySettings() {
               name="currentPassword"
               value={passwordData.currentPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
+              className="w-full px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
               placeholder="Masukkan password saat ini"
             />
             <button
@@ -213,7 +213,7 @@ export default function SecuritySettings() {
               name="newPassword"
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
+              className="w-full px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
               placeholder="Masukkan password baru (min. 8 karakter)"
             />
             <button
@@ -268,7 +268,7 @@ export default function SecuritySettings() {
               name="confirmPassword"
               value={passwordData.confirmPassword}
               onChange={handlePasswordChange}
-              className="w-full px-4 py-3 pr-12 rounded-[12px] border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
+              className="w-full px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-primary transition-all text-gray-900 font-medium focus:outline-none"
               placeholder="Konfirmasi password baru"
             />
             <button
@@ -307,7 +307,7 @@ export default function SecuritySettings() {
         </div>
 
         {/* Password Requirements */}
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-[12px]">
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
           <p className="text-sm font-semibold text-blue-800 mb-2">Persyaratan Password:</p>
           <ul className="space-y-1 text-xs text-blue-700">
             <li className="flex items-center gap-2">
@@ -345,7 +345,7 @@ export default function SecuritySettings() {
           whileTap={{ scale: 0.95 }}
           onClick={handleChangePassword}
           disabled={isChanging}
-          className="flex items-center gap-2 px-8 py-3 rounded-[12px] bg-linear-to-r from-primary to-primary-dark text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-8 py-3 rounded-xl bg-linear-to-r from-primary to-primary-dark text-white font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save sx={{ fontSize: 20 }} />
           <span>{isChanging ? "Mengubah Password..." : "Ubah Password"}</span>

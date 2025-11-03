@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginAPI } from "../lib/api/api";
+import { loginAPI, logoutAPI } from "../lib/api/auth";
 
 interface Admin {
   id: string;
@@ -57,13 +57,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    setAdmin(null);
-    localStorage.removeItem("admin");
-    localStorage.removeItem("admin_token");
-    document.cookie = "token=; Max-Age=0; path=/;";
-    document.cookie = "role=; Max-Age=0; path=/;";
-    router.push("/masuk");
+  const logout = async () => {
+    try {
+      // Call backend to invalidate token
+      await logoutAPI();
+    } catch (error) {
+      // Log error but still proceed with client-side cleanup
+      console.error("Logout API error:", error);
+    } finally {
+      // Always clear client-side data
+      setAdmin(null);
+      localStorage.removeItem("admin");
+      localStorage.removeItem("admin_token");
+      document.cookie = "token=; Max-Age=0; path=/;";
+      document.cookie = "role=; Max-Age=0; path=/;";
+      router.push("/masuk");
+    }
   };
 
   return (

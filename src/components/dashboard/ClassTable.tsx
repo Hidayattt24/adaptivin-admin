@@ -2,8 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  Edit,
-  Delete,
   ExpandMore,
   Search,
   SchoolOutlined,
@@ -13,7 +11,6 @@ import {
   CalendarTodayOutlined,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
-import Swal from "sweetalert2";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllKelas, type KelasResponse } from "@/lib/api/kelas";
 import { getAllSekolah } from "@/lib/api/sekolah";
@@ -95,60 +92,12 @@ export default function ClassTable() {
 
   const displayedClasses = showAll ? filteredClasses : filteredClasses.slice(0, 2);
 
-  const handleEdit = (classData: ClassData) => {
-    Swal.fire({
-      title: "Edit Kelas",
-      text: `Edit data untuk kelas ${classData.kelas}${classData.paralel} - ${classData.namaSekolah}`,
-      icon: "info",
-      confirmButtonColor: "#33A1E0",
-      confirmButtonText: "OK",
-      customClass: {
-        popup: "rounded-[20px] shadow-2xl",
-        title: "text-[#33A1E0] text-2xl font-semibold",
-        confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-      },
-    });
-  };
-
-  const handleDelete = async (classData: ClassData) => {
-    const result = await Swal.fire({
-      title: "Hapus Kelas?",
-      text: `Apakah Anda yakin ingin menghapus kelas ${classData.kelas}${classData.paralel}?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#EF4444",
-      cancelButtonColor: "#94a3b8",
-      confirmButtonText: "Ya, Hapus",
-      cancelButtonText: "Batal",
-      customClass: {
-        popup: "rounded-[20px] shadow-2xl",
-        title: "text-gray-800 text-2xl font-semibold",
-        confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        cancelButton: "font-semibold px-6 py-3 rounded-[12px]",
-      },
-    });
-
-    if (result.isConfirmed) {
-      Swal.fire({
-        title: "Berhasil!",
-        text: "Data kelas telah dihapus",
-        icon: "success",
-        confirmButtonColor: "#22C55E",
-        confirmButtonText: "OK",
-        customClass: {
-          popup: "rounded-[20px] shadow-2xl",
-          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
-        },
-      });
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="rounded-[20px] p-6 shadow-lg bg-[#33A1E0]"
+      className="rounded-[20px] p-6 shadow-lg bg-primary"
     >
       {/* Header */}
       <h2 className="text-white text-2xl font-bold mb-6">Kelas</h2>
@@ -171,7 +120,7 @@ export default function ClassTable() {
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-[#33A1E0] font-semibold hover:bg-gray-50 transition-all shadow-md min-w-[150px] justify-between"
+            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-gray-50 transition-all shadow-md min-w-[150px] justify-between"
           >
             <span>{selectedClass}</span>
             <ExpandMore
@@ -195,7 +144,7 @@ export default function ClassTable() {
                       setIsDropdownOpen(false);
                     }}
                     className={`w-full px-5 py-3 text-left hover:bg-[#ECF3F6] transition-all ${selectedClass === level
-                        ? "bg-[#33A1E0] text-white font-semibold"
+                        ? "bg-primary text-white font-semibold"
                         : "text-gray-700"
                       }`}
                   >
@@ -218,7 +167,7 @@ export default function ClassTable() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#33A1E0]">
+                <tr className="bg-primary">
                   <th className="px-4 py-4 text-left">
                     <input type="checkbox" className="w-4 h-4 rounded accent-white" />
                   </th>
@@ -269,16 +218,16 @@ export default function ClassTable() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className={`border-b border-gray-100 hover:bg-[#33A1E0]/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      className={`border-b border-gray-100 hover:bg-primary/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                         }`}
                     >
                       <td className="px-4 py-4">
-                        <input type="checkbox" className="w-4 h-4 rounded accent-[#33A1E0]" />
+                        <input type="checkbox" className="w-4 h-4 rounded accent-primary" />
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                            <SchoolOutlined className="text-[#33A1E0]" sx={{ fontSize: 16 }} />
+                            <SchoolOutlined className="text-primary" sx={{ fontSize: 16 }} />
                           </div>
                           <span className="text-sm text-gray-700 font-medium">{classData.namaSekolah}</span>
                         </div>
@@ -345,7 +294,7 @@ export default function ClassTable() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAll(!showAll)}
-            className="px-8 py-3 bg-white rounded-full text-[#33A1E0] font-bold hover:bg-gray-50 transition-all shadow-lg"
+            className="px-8 py-3 bg-white rounded-full text-primary font-bold hover:bg-gray-50 transition-all shadow-lg"
           >
             {showAll ? "Lihat Lebih Sedikit" : `Lihat Selengkapnya (${filteredClasses.length - 2} lagi)`}
           </motion.button>
