@@ -151,9 +151,6 @@ export default function ClassModal({
                         }
                       }}
                       options={[
-                        { value: "I", label: "Kelas I" },
-                        { value: "II", label: "Kelas II" },
-                        { value: "III", label: "Kelas III" },
                         { value: "IV", label: "Kelas IV" },
                         { value: "V", label: "Kelas V" },
                         { value: "VI", label: "Kelas VI" }
