@@ -33,26 +33,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const data = await loginAPI(email, password); // Panggil backend kamu (Express)
+      // Response dari loginAPI sudah di-extract: { token, user }
+      const { token, user } = await loginAPI(email, password);
+
+      // Validasi user data
+      if (!user.role || !user.email) {
+        console.error("❌ User data incomplete:", user);
+        throw new Error("Data user tidak lengkap");
+      }
 
       const allowedRoles = ["superadmin", "admin"];
 
-      if (!allowedRoles.includes(data.user.role)) {
-        throw new Error("Akses ditolak: tidak memiliki izin");
+      if (!allowedRoles.includes(user.role)) {
+        throw new Error("Akses ditolak: tidak memiliki izin admin");
       }
 
-      setAdmin(data.user);
-      localStorage.setItem("admin", JSON.stringify(data.user));
-      localStorage.setItem("admin_token", data.token);
+      console.log("✅ Login successful:", user.email, user.role);
+
+      setAdmin(user);
+      localStorage.setItem("admin", JSON.stringify(user));
+      localStorage.setItem("admin_token", token);
 
       // Simpan juga ke cookie agar middleware bisa pakai
-      document.cookie = `token=${data.token}; path=/;`;
-      document.cookie = `role=${data.user.role}; path=/;`;
+      document.cookie = `token=${token}; path=/;`;
+      document.cookie = `role=${user.role}; path=/;`;
 
       router.push("/dashboard");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login gagal";
-      console.error("Login gagal:", errorMessage);
+      console.error("❌ Login failed:", errorMessage);
       throw error;
     }
   };

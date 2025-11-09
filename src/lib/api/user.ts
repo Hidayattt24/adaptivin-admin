@@ -1,4 +1,5 @@
 import axios from "axios";
+import { extractData } from "./responseHelper";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -89,13 +90,18 @@ api.interceptors.request.use(
 // Fungsi CRUD admin
 export async function getAllAdmins() {
   const res = await api.get("/admins");
-  const admins: AdminResponse[] = res.data.admins ?? [];
+
+  // Backend response: { success: true, status: "success", data: [...], message }
+  const admins = extractData<AdminResponse[]>(res);
   return admins.map((admin) => transformAdmin(admin));
 }
 
 export async function getAdminById(id: string) {
   const res = await api.get(`/admins/${id}`);
-  return transformAdmin(res.data.admin ?? res.data.user);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const adminData = extractData<AdminResponse>(res);
+  return transformAdmin(adminData);
 }
 
 export async function createAdmin(payload: AdminPayload) {
@@ -108,7 +114,9 @@ export async function createAdmin(payload: AdminPayload) {
   };
 
   const res = await api.post("/admins/buat-admin", backendPayload);
-  const adminResponse: AdminResponse = res.data.admin;
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const adminResponse = extractData<AdminResponse>(res);
   return transformAdmin(adminResponse, payload);
 }
 
@@ -122,12 +130,17 @@ export async function updateAdmin(id: string, payload: Partial<AdminPayload>) {
   };
 
   const res = await api.put(`/admins/${id}`, backendPayload);
-  return transformAdmin(res.data.admin, { id, ...payload } as AdminPayload);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const adminData = extractData<AdminResponse>(res);
+  return transformAdmin(adminData, { id, ...payload } as AdminPayload);
 }
 
 export async function deleteAdmin(id: string) {
   const res = await api.delete(`/admins/${id}`);
-  return res.data.admin ?? res.data;
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  return extractData<AdminResponse>(res);
 }
 
 // ================= Managed Users (Guru & Siswa) =================
@@ -251,7 +264,9 @@ export async function getAllUsers(
   params?: GetUsersParams
 ): Promise<ManagedUser[]> {
   const res = await api.get("/users", { params });
-  const users: ManagedUserResponse[] = res.data.users ?? [];
+
+  // Backend response: { success: true, status: "success", data: [...], message }
+  const users = extractData<ManagedUserResponse[]>(res);
   return users.map(transformManagedUser);
 }
 
@@ -259,7 +274,10 @@ export const getUsersByRole = (role: ManagedUserRole) => getAllUsers({ role });
 
 export async function getUserById(id: string): Promise<ManagedUser> {
   const res = await api.get(`/users/${id}`);
-  return transformManagedUser(res.data.user);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const userData = extractData<ManagedUserResponse>(res);
+  return transformManagedUser(userData);
 }
 
 export interface CreateManagedUserPayload {
@@ -317,7 +335,10 @@ export async function createManagedUser(
   }
 
   const res = await api.post("/users", backendPayload);
-  return transformManagedUser(res.data.user);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const userData = extractData<ManagedUserResponse>(res);
+  return transformManagedUser(userData);
 }
 
 export interface UpdateManagedUserPayload {
@@ -373,18 +394,25 @@ export async function updateManagedUser(
   }
 
   const res = await api.put(`/users/${id}`, backendPayload);
-  return transformManagedUser(res.data.user);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const userData = extractData<ManagedUserResponse>(res);
+  return transformManagedUser(userData);
 }
 
 export async function deleteManagedUser(id: string): Promise<void> {
   await api.delete(`/users/${id}`);
+  // Delete operation doesn't return data, no need to handle response
 }
 
 // ================= Current Admin Profile =================
 
 export async function getMyProfile(): Promise<AdminData> {
   const res = await api.get("/admins/me");
-  return transformAdmin(res.data.admin);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const adminData = extractData<AdminResponse>(res);
+  return transformAdmin(adminData);
 }
 
 export interface UpdateMyProfilePayload {
@@ -404,7 +432,10 @@ export async function updateMyProfile(
   };
 
   const res = await api.put("/admins/me", backendPayload);
-  return transformAdmin(res.data.admin);
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  const adminData = extractData<AdminResponse>(res);
+  return transformAdmin(adminData);
 }
 
 export interface UpdatePasswordPayload {

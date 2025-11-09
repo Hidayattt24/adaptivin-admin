@@ -1,4 +1,5 @@
 import axios from "axios";
+import { extractData } from "./responseHelper";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -38,18 +39,45 @@ interface ApiErrorResponse {
   details?: string;
 }
 
+interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    nama_lengkap: string;
+    role: string;
+  };
+}
+
 // Login (bisa untuk admin/guru/siswa, tergantung endpoint backend kamu)
 export const loginAPI = async (email: string, password: string) => {
   try {
+    console.log("🔐 Attempting login for:", email);
+
     const response = await api.post("/auth/login", { email, password });
-    return response.data;
+
+    console.log("📦 Raw response:", response.data);
+
+    // Backend response: { success: true, status: "success", data: { token, user }, message }
+    const loginData = extractData<LoginResponse>(response);
+
+    console.log("✅ Extracted login data:", {
+      hasToken: !!loginData.token,
+      hasUser: !!loginData.user,
+      userRole: loginData.user?.role,
+      userEmail: loginData.user?.email,
+    });
+
+    return loginData;
   } catch (error) {
+    console.error("❌ Login API error:", error);
+
     if (axios.isAxiosError(error)) {
       const errorData = error.response?.data as ApiErrorResponse;
-      console.error("Login API error:", errorData);
+      console.error("❌ Error response data:", errorData);
       throw new Error(errorData?.error || errorData?.message || "Login gagal");
     }
-    throw new Error("Login gagal");
+    throw error;
   }
 };
 

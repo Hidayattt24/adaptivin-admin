@@ -1,4 +1,5 @@
 import axios from "axios";
+import { extractData } from "./responseHelper";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -11,7 +12,7 @@ function getTokenFromCookie() {
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
   return token;
-};
+}
 
 // Buat instance axios dengan konfigurasi default
 const api = axios.create({
@@ -31,24 +32,38 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+interface SekolahResponse {
+  id: string;
+  nama_sekolah: string;
+  alamat_sekolah: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Fungsi CRUD sekolah
 export async function getAllSekolah() {
   const res = await api.get("/sekolah");
-  return res.data.sekolah;
-};
+
+  // Backend response: { success: true, status: "success", data: [...], message }
+  return extractData<SekolahResponse[]>(res);
+}
 
 export async function createSekolah(payload: {
   nama_sekolah: string;
   alamat_sekolah: string;
 }) {
   const res = await api.post("/sekolah/buat-sekolah", payload);
-  return res.data.sekolah;
-};
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  return extractData<SekolahResponse>(res);
+}
 
 export async function getSekolahById(id: string) {
   const res = await api.get(`/sekolah/${id}`);
-  return res.data.sekolah;
-};
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  return extractData<SekolahResponse>(res);
+}
 
 export async function updateSekolah(
   id: string,
@@ -58,10 +73,14 @@ export async function updateSekolah(
   }
 ) {
   const res = await api.put(`/sekolah/${id}`, payload);
-  return res.data.sekolah;
-};
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  return extractData<SekolahResponse>(res);
+}
 
 export async function deleteSekolah(id: string) {
   const res = await api.delete(`/sekolah/${id}`);
-  return res.data.sekolah;
-};
+
+  // Backend response: { success: true, status: "success", data: {...}, message }
+  return extractData<SekolahResponse>(res);
+}
