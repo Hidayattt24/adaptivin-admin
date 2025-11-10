@@ -15,7 +15,7 @@ export default function CustomDatePicker({
   value,
   onChange,
   placeholder = "Pilih tanggal",
-  error
+  error,
 }: CustomDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -37,7 +37,20 @@ export default function CustomDatePicker({
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const months = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
@@ -63,18 +76,22 @@ export default function CustomDatePicker({
 
   const handleDateSelect = (date: Date) => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     onChange(`${year}-${month}-${day}`);
     setIsOpen(false);
   };
 
   const previousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+    );
   };
 
   const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+    );
   };
 
   const handleYearChange = (year: number) => {
@@ -89,27 +106,60 @@ export default function CustomDatePicker({
 
   // Generate year range (from 1950 to current year + 10)
   const currentYear = new Date().getFullYear();
-  const yearRange = Array.from({ length: currentYear - 1949 + 10 }, (_, i) => currentYear + 10 - i);
+  const yearRange = Array.from(
+    { length: currentYear - 1949 + 10 },
+    (_, i) => currentYear + 10 - i
+  );
 
-  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-  const monthsShort = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const months = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+  const monthsShort = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
   const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
   const calendarDays = getDaysInMonth(currentMonth);
 
   const isToday = (date: Date | null) => {
     if (!date) return false;
     const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
   };
 
   const isSelected = (date: Date | null) => {
     if (!date || !value) return false;
     const selectedDate = new Date(value);
-    return date.getDate() === selectedDate.getDate() &&
-           date.getMonth() === selectedDate.getMonth() &&
-           date.getFullYear() === selectedDate.getFullYear();
+    return (
+      date.getDate() === selectedDate.getDate() &&
+      date.getMonth() === selectedDate.getMonth() &&
+      date.getFullYear() === selectedDate.getFullYear()
+    );
   };
 
   return (
@@ -244,8 +294,11 @@ export default function CustomDatePicker({
             {!showYearPicker && !showMonthPicker && (
               <>
                 <div className="grid grid-cols-7 gap-1 mb-2">
-                  {days.map(day => (
-                    <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
+                  {days.map((day) => (
+                    <div
+                      key={day}
+                      className="text-center text-xs font-semibold text-gray-500 py-2"
+                    >
                       {day}
                     </div>
                   ))}
@@ -255,7 +308,9 @@ export default function CustomDatePicker({
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((date, index) => {
                     if (!date) {
-                      return <div key={`empty-${index}`} className="aspect-square" />;
+                      return (
+                        <div key={`empty-${index}`} className="aspect-square" />
+                      );
                     }
 
                     return (
