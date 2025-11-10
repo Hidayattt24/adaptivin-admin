@@ -19,6 +19,8 @@ export default function CustomDatePicker({
 }: CustomDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,7 +77,22 @@ export default function CustomDatePicker({
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
   };
 
+  const handleYearChange = (year: number) => {
+    setCurrentMonth(new Date(year, currentMonth.getMonth()));
+    setShowYearPicker(false);
+  };
+
+  const handleMonthChange = (monthIndex: number) => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), monthIndex));
+    setShowMonthPicker(false);
+  };
+
+  // Generate year range (from 1950 to current year + 10)
+  const currentYear = new Date().getFullYear();
+  const yearRange = Array.from({ length: currentYear - 1949 + 10 }, (_, i) => currentYear + 10 - i);
+
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const monthsShort = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
   const calendarDays = getDaysInMonth(currentMonth);
 
@@ -134,10 +151,35 @@ export default function CustomDatePicker({
               >
                 <ChevronLeft className="text-primary" />
               </motion.button>
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-primary">
-                  {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                </h3>
+              <div className="flex gap-2">
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setShowMonthPicker(!showMonthPicker);
+                    setShowYearPicker(false);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                >
+                  <span className="text-sm font-bold text-primary">
+                    {months[currentMonth.getMonth()]}
+                  </span>
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setShowYearPicker(!showYearPicker);
+                    setShowMonthPicker(false);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+                >
+                  <span className="text-sm font-bold text-primary">
+                    {currentMonth.getFullYear()}
+                  </span>
+                </motion.button>
               </div>
               <motion.button
                 type="button"
@@ -150,42 +192,94 @@ export default function CustomDatePicker({
               </motion.button>
             </div>
 
-            {/* Days of Week */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {days.map(day => (
-                <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
-                  {day}
+            {/* Year Picker */}
+            {showYearPicker && (
+              <div className="mb-4 max-h-64 overflow-y-auto rounded-lg border border-gray-200 p-2">
+                <div className="grid grid-cols-4 gap-2">
+                  {yearRange.map((year) => (
+                    <motion.button
+                      key={year}
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleYearChange(year)}
+                      className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                        year === currentMonth.getFullYear()
+                          ? "bg-primary text-white shadow-lg"
+                          : "bg-gray-100 hover:bg-primary/10 text-gray-700"
+                      }`}
+                    >
+                      {year}
+                    </motion.button>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-1">
-              {calendarDays.map((date, index) => {
-                if (!date) {
-                  return <div key={`empty-${index}`} className="aspect-square" />;
-                }
+            {/* Month Picker */}
+            {showMonthPicker && (
+              <div className="mb-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {monthsShort.map((month, index) => (
+                    <motion.button
+                      key={month}
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleMonthChange(index)}
+                      className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                        index === currentMonth.getMonth()
+                          ? "bg-primary text-white shadow-lg"
+                          : "bg-gray-100 hover:bg-primary/10 text-gray-700"
+                      }`}
+                    >
+                      {month}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                return (
-                  <motion.button
-                    key={date.toISOString()}
-                    type="button"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDateSelect(date)}
-                    className={`aspect-square rounded-lg text-sm font-medium transition-all ${
-                      isSelected(date)
-                        ? "bg-linear-to-br from-primary to-primary-dark text-white shadow-lg"
-                        : isToday(date)
-                        ? "bg-primary/10 text-primary border-2 border-primary"
-                        : "hover:bg-primary/10 text-gray-700"
-                    }`}
-                  >
-                    {date.getDate()}
-                  </motion.button>
-                );
-              })}
-            </div>
+            {/* Days of Week */}
+            {!showYearPicker && !showMonthPicker && (
+              <>
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {days.map(day => (
+                    <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Days */}
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map((date, index) => {
+                    if (!date) {
+                      return <div key={`empty-${index}`} className="aspect-square" />;
+                    }
+
+                    return (
+                      <motion.button
+                        key={date.toISOString()}
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleDateSelect(date)}
+                        className={`aspect-square rounded-lg text-sm font-medium transition-all ${
+                          isSelected(date)
+                            ? "bg-linear-to-br from-primary to-primary-dark text-white shadow-lg"
+                            : isToday(date)
+                            ? "bg-primary/10 text-primary border-2 border-primary"
+                            : "hover:bg-primary/10 text-gray-700"
+                        }`}
+                      >
+                        {date.getDate()}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {/* Quick Actions */}
             <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
