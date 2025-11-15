@@ -15,6 +15,7 @@ interface AuthInputProps {
   minLength?: number;
   id?: string;
   name?: string;
+  disabled?: boolean;
 }
 
 const iconMap = {
@@ -35,6 +36,7 @@ export default function AuthInput({
   minLength,
   id,
   name,
+  disabled = false,
 }: AuthInputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const IconComponent = icon ? iconMap[icon] : null;
@@ -60,6 +62,7 @@ export default function AuthInput({
           placeholder={placeholder}
           required={required}
           minLength={minLength}
+          disabled={disabled}
           className={`
             w-full py-3 px-4 bg-white border-2 border-primary rounded-full
             text-gray-700 placeholder-gray-400
@@ -67,6 +70,7 @@ export default function AuthInput({
             transition-all duration-200
             ${IconComponent ? "pl-12" : ""}
             ${hasToggle ? "pr-12" : ""}
+            ${disabled ? "opacity-60 cursor-not-allowed bg-gray-50" : ""}
           `}
         />
         {hasToggle && type === "password" && (
