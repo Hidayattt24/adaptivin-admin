@@ -26,24 +26,41 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!admin) return;
+      if (!admin) {
+        console.log("Admin context is null, skipping profile fetch");
+        setIsLoading(false);
+        return;
+      }
 
       try {
         setIsLoading(true);
+        console.log("Fetching profile for admin:", admin.id);
         const profile = await getMyProfile();
+        console.log("Profile fetched successfully:", profile);
+        
         setFormData({
-          nama_lengkap: profile.nama_lengkap || "",
-          email: profile.email || "",
+          nama_lengkap: profile.nama_lengkap || admin.nama_lengkap || "",
+          email: profile.email || admin.email || "",
           jenisKelamin: profile.jenisKelamin || "",
           alamat: profile.alamat || "",
         });
       } catch (error) {
         console.error("Gagal memuat profil:", error);
+        
+        // Fallback: use admin data from context if API fails
+        console.log("Using fallback data from admin context");
+        setFormData({
+          nama_lengkap: admin.nama_lengkap || "",
+          email: admin.email || "",
+          jenisKelamin: "",
+          alamat: "",
+        });
+        
         Swal.fire({
-          title: "Error!",
-          text: "Gagal memuat data profil",
-          icon: "error",
-          confirmButtonColor: "#ef4444",
+          title: "Peringatan",
+          text: "Menggunakan data dari cache. Beberapa informasi mungkin tidak lengkap.",
+          icon: "warning",
+          confirmButtonColor: "#f59e0b",
           confirmButtonText: "OK",
         });
       } finally {
@@ -64,11 +81,22 @@ export default function ProfileSettings() {
 
     try {
       setIsSaving(true);
-      await updateMyProfile({
+      const updatedProfile = await updateMyProfile({
         nama_lengkap: formData.nama_lengkap,
         jenisKelamin: formData.jenisKelamin,
         alamat: formData.alamat,
       });
+
+      console.log("Profile updated successfully:", updatedProfile);
+
+      // Update local storage admin data with new nama_lengkap
+      if (admin) {
+        const updatedAdmin = {
+          ...admin,
+          nama_lengkap: updatedProfile.nama_lengkap,
+        };
+        localStorage.setItem("admin", JSON.stringify(updatedAdmin));
+      }
 
       Swal.fire({
         title: "Berhasil!",
@@ -83,11 +111,30 @@ export default function ProfileSettings() {
           confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
         },
       });
+
+      // Refresh profile data
+      try {
+        const refreshedProfile = await getMyProfile();
+        setFormData({
+          nama_lengkap: refreshedProfile.nama_lengkap || "",
+          email: refreshedProfile.email || "",
+          jenisKelamin: refreshedProfile.jenisKelamin || "",
+          alamat: refreshedProfile.alamat || "",
+        });
+      } catch (refreshError) {
+        console.error("Failed to refresh profile:", refreshError);
+      }
     } catch (error) {
       console.error("Gagal menyimpan profil:", error);
+      
+      let errorMessage = "Gagal menyimpan perubahan profil";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       Swal.fire({
         title: "Error!",
-        text: "Gagal menyimpan perubahan profil",
+        text: errorMessage,
         icon: "error",
         confirmButtonColor: "#ef4444",
         confirmButtonText: "OK",
@@ -96,6 +143,17 @@ export default function ProfileSettings() {
       setIsSaving(false);
     }
   };
+
+  // Guard: if no admin in context, show empty state
+  if (!admin) {
+    return (
+      <div className="bg-white rounded-[20px] shadow-lg p-8">
+        <div className="text-center py-12">
+          <p className="text-gray-500 font-medium">Memuat data admin...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

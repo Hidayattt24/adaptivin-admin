@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import ProfileSettings from "@/components/pages/pengaturan/ProfileSettings";
 import SecuritySettings from "@/components/pages/pengaturan/SecuritySettings";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   PersonOutline,
   SecurityOutlined
@@ -13,7 +15,17 @@ import { motion } from "framer-motion";
 type SettingsTab = "profile" | "security";
 
 export default function PengaturanPage() {
+  const { admin } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+
+  // Redirect to login if no admin in context
+  useEffect(() => {
+    if (!admin) {
+      console.log("No admin in context, redirecting to login");
+      router.push("/masuk");
+    }
+  }, [admin, router]);
 
   const tabs = [
     {
@@ -42,6 +54,11 @@ export default function PengaturanPage() {
         return <ProfileSettings />;
     }
   };
+
+  // Don't render if no admin (will redirect)
+  if (!admin) {
+    return null;
+  }
 
   return (
     <ResponsiveLayout title="Pengaturan">
