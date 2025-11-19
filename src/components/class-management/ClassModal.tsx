@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Close,
   ClassOutlined,
-  Save
+  Save,
+  SchoolOutlined
 } from "@mui/icons-material";
 import CustomSelect from "../user-management/CustomSelect";
+import { getAllSekolah } from "@/lib/api/sekolah";
 
 interface ClassData {
   id: string;
@@ -16,6 +18,7 @@ interface ClassData {
   paralel: string;
   mataPelajaran: string[];
   jumlahMurid: number;
+  sekolahId?: string;
 }
 
 interface ClassModalProps {
@@ -26,6 +29,8 @@ interface ClassModalProps {
   mode: "create" | "edit";
   studentCount?: number;
   isSaving?: boolean;
+  isSuperAdmin?: boolean;
+  adminSekolahId?: string;
 }
 
 export default function ClassModal({
@@ -36,6 +41,8 @@ export default function ClassModal({
   mode,
   studentCount = 0,
   isSaving = false,
+  isSuperAdmin = false,
+  adminSekolahId,
 }: ClassModalProps) {
   const [formData, setFormData] = useState<ClassData>(() =>
     classData && mode === "edit"
@@ -50,6 +57,7 @@ export default function ClassModal({
       : {
         id: "",
         sekolah: classData?.sekolah ?? "",
+        sekolahId: classData?.sekolahId ?? adminSekolahId ?? "",
         kelas: classData?.kelas ?? "",
         paralel: classData?.paralel ?? "",
         mataPelajaran:
@@ -61,6 +69,32 @@ export default function ClassModal({
   );
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [sekolahOptions, setSekolahOptions] = useState<{ value: string; label: string }[]>([]);
+  const [isLoadingSekolah, setIsLoadingSekolah] = useState(false);
+
+  // Load sekolah list untuk superadmin
+  useEffect(() => {
+    if (!isOpen || !isSuperAdmin) return;
+
+    const loadSekolah = async () => {
+      setIsLoadingSekolah(true);
+      try {
+        const sekolahList = await getAllSekolah();
+        const options = sekolahList.map((s) => ({
+          value: s.id,
+          label: s.nama_sekolah ?? "Nama sekolah tidak tersedia",
+        }));
+        setSekolahOptions(options);
+      } catch (error) {
+        console.error("Failed to load sekolah:", error);
+        setSekolahOptions([]);
+      } finally {
+        setIsLoadingSekolah(false);
+      }
+    };
+
+    loadSekolah();
+  }, [isOpen, isSuperAdmin]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -73,10 +107,32 @@ export default function ClassModal({
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
+    if (isSuperAdmin && !formData.sekolahId) {
+      newErrors.sekolahId = "Sekolah wajib dipilih untuk superadmin";
+    }
     if (!formData.kelas) newErrors.kelas = "Kelas wajib dipilih";
     if (!formData.paralel.trim()) newErrors.paralel = "Paralel wajib diisi";
 
     setErrors(newErrors);
+    
+    // Focus pada field pertama yang error
+    if (newErrors.sekolahId) {
+      setTimeout(() => {
+        const select = document.querySelector('select[name="sekolahId"]') as HTMLSelectElement;
+        if (select) select.focus();
+      }, 100);
+    } else if (newErrors.kelas) {
+      setTimeout(() => {
+        const select = document.querySelector('select[name="kelas"]') as HTMLSelectElement;
+        if (select) select.focus();
+      }, 100);
+    } else if (newErrors.paralel) {
+      setTimeout(() => {
+        const input = document.querySelector('input[name="paralel"]') as HTMLInputElement;
+        if (input) input.focus();
+      }, 100);
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
@@ -135,6 +191,34 @@ export default function ClassModal({
             {/* Form Content */}
             <form onSubmit={handleSubmit} className="p-6 lg:p-8 overflow-y-auto max-h-[calc(90vh-200px)]">
               <div className="space-y-6">
+                {/* Pilihan Sekolah - hanya untuk superadmin */}
+                {isSuperAdmin && (
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <SchoolOutlined className="text-primary" sx={{ fontSize: 18 }} />
+                      Sekolah <span className="text-red-500">*</span>
+                    </label>
+                    <CustomSelect
+                      value={formData.sekolahId || ""}
+                      onChange={(value) => {
+                        setFormData(prev => ({ ...prev, sekolahId: value }));
+                        if (errors.sekolahId) {
+                          setErrors(prev => ({ ...prev, sekolahId: "" }));
+                        }
+                      }}
+                      options={sekolahOptions}
+                      placeholder={isLoadingSekolah ? "Memuat sekolah..." : "Pilih sekolah"}
+                      icon={<SchoolOutlined sx={{ fontSize: 18 }} />}
+                      error={errors.sekolahId}
+                      disabled={isLoadingSekolah || isSaving}
+                    />
+                    {errors.sekolahId && (
+                      <p className="text-red-500 text-xs mt-1">{errors.sekolahId}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">💡 Pilih sekolah terlebih dahulu untuk menambahkan kelas</p>
+                  </div>
+                )}
+
                 {/* Kelas & Paralel */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>

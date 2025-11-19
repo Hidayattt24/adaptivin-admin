@@ -9,6 +9,7 @@ import AuthInput from "@/components/auth/AuthInput";
 import AuthButton from "@/components/auth/AuthButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function MasukPage() {
   const router = useRouter();
@@ -26,6 +27,19 @@ export default function MasukPage() {
 
     try {
       await login(email, password);
+      // Tampilkan SweetAlert berhasil login
+      await Swal.fire({
+        title: "Login Berhasil!",
+        text: "Selamat datang di Dashboard Admin Adaptivin",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+        background: "#ffffff",
+        customClass: {
+          popup: "rounded-[20px] shadow-2xl",
+          title: "text-[#33A1E0] text-2xl font-semibold",
+        },
+      });
       // Router.push sudah ada di AuthContext, tapi kita tetap panggil untuk memastikan
       router.push("/dashboard");
     } catch (error: any) {
@@ -34,6 +48,21 @@ export default function MasukPage() {
         error?.message ||
         "Login gagal. Periksa kembali email dan password Anda.";
       setError(errorMessage);
+      
+      // Tampilkan SweetAlert gagal login
+      await Swal.fire({
+        title: "Login Gagal!",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonColor: "#33A1E0",
+        confirmButtonText: "Coba Lagi",
+        background: "#ffffff",
+        customClass: {
+          popup: "rounded-[20px] shadow-2xl",
+          title: "text-[#ef4444] text-2xl font-semibold",
+          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+        },
+      });
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import ResponsiveLayout from "@/components/layout/ResponsiveLayout";
 import ClassManagementTable from "@/components/class-management/ClassManagementTable";
 import ClassModal from "@/components/class-management/ClassModal";
+import ClassDetailModal from "@/components/class-management/ClassDetailModal";
 import Swal from "sweetalert2";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -15,6 +16,7 @@ import {
   KelasResponse,
 } from "@/lib/api/kelas";
 import { getAllSekolah } from "@/lib/api/sekolah";
+import { getAllUsers } from "@/lib/api/user";
 
 interface ClassData {
   id: string;
@@ -29,6 +31,7 @@ interface ClassData {
   tahunAjaran?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  guruNames?: string[];
 }
 
 export default function KelolaKelasPage() {
@@ -40,9 +43,10 @@ export default function KelolaKelasPage() {
   const [modalInstanceKey, setModalInstanceKey] = useState("class-modal");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const mapKelasResponse = useCallback(
-    (kelas: KelasResponse, sekolahMap: Record<string, string>): ClassData => ({
+    (kelas: KelasResponse, sekolahMap: Record<string, string>, guruMap: Record<string, string[]>): ClassData => ({
       id: kelas.id,
       sekolahId: kelas.sekolah_id,
       sekolah: sekolahMap[kelas.sekolah_id] ?? "Sekolah tidak ditemukan",
@@ -55,6 +59,7 @@ export default function KelolaKelasPage() {
       tahunAjaran: kelas.tahun_ajaran,
       createdAt: kelas.created_at,
       updatedAt: kelas.updated_at,
+      guruNames: guruMap[kelas.id] ?? [],
     }),
     []
   );
@@ -108,7 +113,24 @@ export default function KelolaKelasPage() {
       const sekolahMap = await fetchSchools();
 
       const kelasList = await getAllKelas();
-      const mapped = kelasList.map((kelas) => mapKelasResponse(kelas, sekolahMap));
+      
+      // Fetch all teachers to map them by kelasId
+      const allTeachers = await getAllUsers({ role: "guru" });
+      const guruMap: Record<string, string[]> = {};
+      allTeachers.forEach((guru) => {
+        if (guru.kelasId) {
+          // Split kelasId by comma in case there are multiple classes
+          const kelasIds = guru.kelasId.split(',').map((id: string) => id.trim());
+          kelasIds.forEach((kelasId: string) => {
+            if (!guruMap[kelasId]) {
+              guruMap[kelasId] = [];
+            }
+            guruMap[kelasId].push(guru.nama);
+          });
+        }
+      });
+
+      const mapped = kelasList.map((kelas) => mapKelasResponse(kelas, sekolahMap, guruMap));
       setClasses(mapped);
     } catch (error) {
       const message = extractErrorMessage(error, "Gagal memuat data kelas");
@@ -141,23 +163,41 @@ export default function KelolaKelasPage() {
     setIsModalOpen(true);
   };
 
+  const handleDetail = (classData: ClassData) => {
+    setSelectedClass(classData);
+    setIsDetailModalOpen(true);
+  };
+
   const handleDelete = async (classData: ClassData) => {
     if (isSubmitting) return;
 
     const result = await Swal.fire({
-      title: "Hapus Data Kelas?",
-      html: `Apakah Anda yakin ingin menghapus data kelas <b>${classData.kelas} ${classData.paralel} - ${classData.sekolah}</b>?<br/>Tindakan ini tidak dapat dibatalkan.`,
+      title: "Hapus Kelas?",
+      html: `
+        <div class="text-left">
+          <p class="mb-3">Apakah Anda yakin ingin menghapus kelas <b>${classData.kelas} ${classData.paralel} - ${classData.sekolah}</b>?</p>
+          <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+            <p class="text-sm text-yellow-800 mb-2"><b>⚠️ Perhatian:</b></p>
+            <ul class="text-sm text-yellow-700 list-disc list-inside space-y-1">
+              <li>Guru dan siswa akan dilepaskan dari kelas ini</li>
+              <li>Assignment guru dan siswa ke kelas akan dihapus</li>
+              <li>Data guru dan siswa <b>tidak</b> akan dihapus</li>
+              <li>Tindakan ini tidak dapat dibatalkan</li>
+            </ul>
+          </div>
+        </div>
+      `,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
       cancelButtonColor: "#94a3b8",
-      confirmButtonText: "Ya, Hapus",
+      confirmButtonText: "Ya, Hapus Kelas",
       cancelButtonText: "Batal",
       background: "#ffffff",
       customClass: {
         popup: "rounded-[20px] shadow-2xl",
         title: "text-[#ef4444] text-2xl font-semibold",
-        htmlContainer: "text-gray-600 text-base font-medium",
+        htmlContainer: "text-gray-600",
         confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
         cancelButton: "font-semibold px-6 py-3 rounded-[12px]",
       },
@@ -167,11 +207,27 @@ export default function KelolaKelasPage() {
 
     try {
       setIsSubmitting(true);
-      await deleteKelas(classData.id);
+      const response = await deleteKelas(classData.id);
       await refreshClasses();
-      Swal.fire({
+      
+      // Show detailed success message
+      const affected = response?.affected || {};
+      await Swal.fire({
         title: "Berhasil!",
-        text: `Data kelas ${classData.kelas} ${classData.paralel} berhasil dihapus.`,
+        html: `
+          <div class="text-left">
+            <p class="mb-3">Kelas <b>${classData.kelas} ${classData.paralel}</b> telah dihapus.</p>
+            ${affected.guru || affected.siswa ? `
+              <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <p class="text-sm text-blue-800 mb-2"><b>📊 Data yang terpengaruh:</b></p>
+                <ul class="text-sm text-blue-700 list-disc list-inside space-y-1">
+                  ${affected.guru ? `<li>${affected.guru} Guru dilepaskan dari kelas</li>` : ''}
+                  ${affected.siswa ? `<li>${affected.siswa} Siswa dilepaskan dari kelas</li>` : ''}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        `,
         icon: "success",
         confirmButtonColor: "#33A1E0",
         confirmButtonText: "OK",
@@ -179,16 +235,22 @@ export default function KelolaKelasPage() {
         customClass: {
           popup: "rounded-[20px] shadow-2xl",
           title: "text-primary text-2xl font-semibold",
+          htmlContainer: "text-gray-600",
           confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
         },
       });
     } catch (error) {
       const message = extractErrorMessage(error, "Gagal menghapus data kelas");
-      Swal.fire({
+      await Swal.fire({
         icon: "error",
         title: "Gagal menghapus",
         text: message,
         confirmButtonColor: "#33A1E0",
+        customClass: {
+          popup: "rounded-[20px] shadow-2xl",
+          title: "text-[#ef4444] text-2xl font-semibold",
+          confirmButton: "font-semibold px-6 py-3 rounded-[12px]",
+        },
       });
     } finally {
       setIsSubmitting(false);
@@ -208,11 +270,29 @@ export default function KelolaKelasPage() {
       mata_pelajaran: classData.mataPelajaran?.[0] ?? "Matematika",
     };
 
+    // Tambahkan sekolah_id jika superadmin atau dari classData
+    if (classData.sekolahId) {
+      payload.sekolah_id = classData.sekolahId;
+    } else if (admin?.sekolah_id) {
+      payload.sekolah_id = admin.sekolah_id;
+    }
+
     if (!payload.nama_kelas || !payload.tingkat_kelas) {
       Swal.fire({
         icon: "warning",
         title: "Data belum lengkap",
         text: "Pastikan tingkat kelas dan paralel terisi dengan benar.",
+        confirmButtonColor: "#33A1E0",
+      });
+      return;
+    }
+
+    // Validasi sekolah_id untuk superadmin
+    if (admin?.role === "superadmin" && !payload.sekolah_id) {
+      Swal.fire({
+        icon: "warning",
+        title: "Sekolah belum dipilih",
+        text: "Superadmin harus memilih sekolah terlebih dahulu.",
         confirmButtonColor: "#33A1E0",
       });
       return;
@@ -288,6 +368,7 @@ export default function KelolaKelasPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onAdd={handleAdd}
+          onDetail={handleDetail}
         />
       )}
 
@@ -300,6 +381,14 @@ export default function KelolaKelasPage() {
         mode={modalMode}
         studentCount={selectedClass?.jumlahMurid ?? 0}
         isSaving={isSubmitting}
+        isSuperAdmin={admin?.role === "superadmin"}
+        adminSekolahId={admin?.sekolah_id}
+      />
+
+      <ClassDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        classData={selectedClass}
       />
     </ResponsiveLayout>
   );

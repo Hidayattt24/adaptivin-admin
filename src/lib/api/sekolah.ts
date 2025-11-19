@@ -40,6 +40,14 @@ interface SekolahResponse {
   updated_at?: string;
 }
 
+interface SekolahDeleteResponse extends SekolahResponse {
+  affected?: {
+    guru?: number;
+    siswa?: number;
+    kelas?: number;
+  };
+}
+
 // Fungsi CRUD sekolah
 export async function getAllSekolah() {
   const res = await api.get("/sekolah");
@@ -81,6 +89,6 @@ export async function updateSekolah(
 export async function deleteSekolah(id: string) {
   const res = await api.delete(`/sekolah/${id}`);
 
-  // Backend response: { success: true, status: "success", data: {...}, message }
-  return extractData<SekolahResponse>(res);
+  // Backend response: { success: true, status: "success", data: {...affected}, message }
+  return extractData<SekolahDeleteResponse>(res);
 }

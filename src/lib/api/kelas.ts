@@ -29,6 +29,13 @@ export interface KelasResponse {
   jumlah_siswa?: number;
 }
 
+export interface KelasDeleteResponse extends KelasResponse {
+  affected?: {
+    guru?: number;
+    siswa?: number;
+  };
+}
+
 export interface KelasPayload {
   nama_kelas: string;
   tingkat_kelas: string;
@@ -92,6 +99,6 @@ export async function updateKelas(id: string, payload: Partial<KelasPayload>) {
 export async function deleteKelas(id: string) {
   const res = await api.delete(`/kelas/${id}`);
 
-  // Backend response: { success: true, status: "success", data: {...}, message }
-  return extractData<KelasResponse>(res);
+  // Backend response: { success: true, status: "success", data: {...affected}, message }
+  return extractData<KelasDeleteResponse>(res);
 }

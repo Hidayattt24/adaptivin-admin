@@ -258,6 +258,7 @@ const transformManagedUser = (user: ManagedUserResponse): ManagedUser => {
 type GetUsersParams = {
   role?: ManagedUserRole;
   sekolah_id?: string;
+  kelas_id?: string;
 };
 
 export async function getAllUsers(
@@ -403,6 +404,20 @@ export async function updateManagedUser(
 export async function deleteManagedUser(id: string): Promise<void> {
   await api.delete(`/users/${id}`);
   // Delete operation doesn't return data, no need to handle response
+}
+
+export async function resetUserPassword(id: string): Promise<{ newPassword: string }> {
+  const res = await api.post(`/users/${id}/reset-password`);
+  // Backend response: { success: true, status: "success", data: { newPassword: "..." }, message }
+  return extractData<{ newPassword: string }>(res);
+}
+
+export async function bulkMoveStudents(userIds: string[], targetKelasId: string): Promise<void> {
+  const res = await api.post("/users/bulk-move", {
+    userIds,
+    kelasId: targetKelasId,
+  });
+  return extractData<void>(res);
 }
 
 // ================= Current Admin Profile =================

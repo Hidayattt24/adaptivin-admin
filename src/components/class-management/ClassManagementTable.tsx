@@ -9,7 +9,9 @@ import {
   SubjectOutlined,
   Edit,
   Delete,
-  Add
+  Add,
+  Visibility,
+  PersonOutline
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "../user-management/EmptyState";
@@ -21,6 +23,7 @@ interface ClassData {
   paralel: string;
   mataPelajaran: string[];
   jumlahMurid: number;
+  guruNames?: string[];
 }
 
 interface ClassManagementTableProps {
@@ -28,22 +31,37 @@ interface ClassManagementTableProps {
   onEdit: (classData: ClassData) => void;
   onDelete: (classData: ClassData) => void;
   onAdd: () => void;
+  onDetail?: (classData: ClassData) => void;
 }
 
 export default function ClassManagementTable({
   classes,
   onEdit,
   onDelete,
-  onAdd
+  onAdd,
+  onDetail
 }: ClassManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKelas, setSelectedKelas] = useState("Semua Kelas");
+  const [selectedSekolah, setSelectedSekolah] = useState("Semua Sekolah");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isKelasDropdownOpen, setIsKelasDropdownOpen] = useState(false);
+  const [isSekolahDropdownOpen, setIsSekolahDropdownOpen] = useState(false);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
 
   const itemsPerPage = 10;
   const kelasOptions = ["Semua Kelas", "I", "II", "III", "IV", "V", "VI"];
+  
+  // Generate sekolah options dari data classes
+  const sekolahOptions = useMemo(() => {
+    const schools = new Set<string>();
+    classes.forEach((classData) => {
+      if (classData.sekolah) {
+        schools.add(classData.sekolah);
+      }
+    });
+    return ["Semua Sekolah", ...Array.from(schools).sort((a, b) => a.localeCompare(b))];
+  }, [classes]);
 
   const toggleSelectClass = (id: string) => {
     setSelectedClasses(prev =>
@@ -72,9 +90,12 @@ export default function ClassManagementTable({
       const matchesKelas =
         selectedKelas === "Semua Kelas" || classData.kelas === selectedKelas;
 
-      return matchesSearch && matchesKelas;
+      const matchesSekolah =
+        selectedSekolah === "Semua Sekolah" || classData.sekolah === selectedSekolah;
+
+      return matchesSearch && matchesKelas && matchesSekolah;
     });
-  }, [searchTerm, selectedKelas, classes]);
+  }, [searchTerm, selectedKelas, selectedSekolah, classes]);
 
   // Pagination
   const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
@@ -103,9 +124,9 @@ export default function ClassManagementTable({
       </div>
 
       {/* Search and Filter */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-6 flex-wrap">
         {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-md min-w-[250px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -119,20 +140,61 @@ export default function ClassManagementTable({
           />
         </div>
 
-        {/* Class Filter Dropdown */}
+        {/* School Filter Dropdown */}
         <div className="relative">
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-gray-50 transition-all shadow-md min-w-[150px] justify-between"
+            onClick={() => setIsSekolahDropdownOpen(!isSekolahDropdownOpen)}
+            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-gray-50 transition-all shadow-md min-w-[180px] justify-between"
           >
-            <span>{selectedKelas}</span>
+            <span className="truncate">{selectedSekolah}</span>
             <ExpandMore
-              className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+              className={`transition-transform ${isSekolahDropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           <AnimatePresence>
-            {isDropdownOpen && (
+            {isSekolahDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full mt-2 right-0 bg-white rounded-[15px] shadow-xl overflow-hidden z-10 min-w-[180px] max-h-[300px] overflow-y-auto"
+              >
+                {sekolahOptions.map((sekolah) => (
+                  <button
+                    key={sekolah}
+                    onClick={() => {
+                      setSelectedSekolah(sekolah);
+                      setIsSekolahDropdownOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className={`w-full px-5 py-3 text-left hover:bg-[#ECF3F6] transition-all ${selectedSekolah === sekolah
+                      ? "bg-primary text-white font-semibold"
+                      : "text-gray-700"
+                      }`}
+                  >
+                    {sekolah}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Class Filter Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsKelasDropdownOpen(!isKelasDropdownOpen)}
+            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-gray-50 transition-all shadow-md min-w-[150px] justify-between"
+          >
+            <span>{selectedKelas}</span>
+            <ExpandMore
+              className={`transition-transform ${isKelasDropdownOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          <AnimatePresence>
+            {isKelasDropdownOpen && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -144,7 +206,7 @@ export default function ClassManagementTable({
                     key={kelas}
                     onClick={() => {
                       setSelectedKelas(kelas);
-                      setIsDropdownOpen(false);
+                      setIsKelasDropdownOpen(false);
                       setCurrentPage(1);
                     }}
                     className={`w-full px-5 py-3 text-left hover:bg-[#ECF3F6] transition-all ${selectedKelas === kelas
@@ -212,7 +274,13 @@ export default function ClassManagementTable({
                   </div>
                 </th>
                 <th className="px-4 py-4 text-left">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Jumlah Murid</span>
+                  <div className="flex items-center gap-2">
+                    <PersonOutline className="text-white" sx={{ fontSize: 18 }} />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Guru</span>
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Jumlah Siswa</span>
                 </th>
                 <th className="px-4 py-4 text-center">
                   <span className="text-xs font-bold text-white uppercase tracking-wider">Aksi</span>
@@ -274,12 +342,39 @@ export default function ClassManagementTable({
                       </div>
                     </td>
                     <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                          <PersonOutline className="text-orange-600" sx={{ fontSize: 16 }} />
+                        </div>
+                        {classData.guruNames && classData.guruNames.length > 0 ? (
+                          <span className="text-sm text-gray-700 font-medium">
+                            {classData.guruNames.length === 1
+                              ? classData.guruNames[0]
+                              : `${classData.guruNames.length} Guru`}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400 italic">Belum ada guru</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
                       <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
-                        {classData.jumlahMurid} Murid
+                        {classData.jumlahMurid} Siswa
                       </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
+                        {onDetail && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => onDetail(classData)}
+                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all shadow-md"
+                            title="Detail"
+                          >
+                            <Visibility sx={{ fontSize: 18 }} />
+                          </motion.button>
+                        )}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -309,7 +404,7 @@ export default function ClassManagementTable({
           {filteredClasses.length === 0 && (
             <EmptyState
               message="Tidak ada data kelas yang ditemukan"
-              description={searchTerm || selectedKelas !== "Semua Kelas"
+              description={searchTerm || selectedKelas !== "Semua Kelas" || selectedSekolah !== "Semua Sekolah"
                 ? "Coba ubah kata kunci pencarian atau filter Anda"
                 : "Belum ada data kelas. Klik tombol 'Tambah Kelas' untuk menambahkan data baru"}
             />

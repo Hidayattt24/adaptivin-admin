@@ -7,7 +7,8 @@ import {
   LocationOnOutlined,
   Edit,
   Delete,
-  Add
+  Add,
+  Visibility
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "../user-management/EmptyState";
@@ -23,13 +24,15 @@ interface SekolahManagementTableProps {
   onEdit: (sekolah: Sekolah) => void;
   onDelete: (sekolah: Sekolah) => void;
   onAdd: () => void;
+  onDetail?: (sekolah: Sekolah) => void;
 }
 
 export default function SchoolManagementTable({
   sekolah,
   onEdit,
   onDelete,
-  onAdd
+  onAdd,
+  onDetail
 }: SekolahManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -178,6 +181,17 @@ export default function SchoolManagementTable({
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
+                        {onDetail && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => onDetail(sekolah)}
+                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all shadow-md"
+                            title="Detail"
+                          >
+                            <Visibility sx={{ fontSize: 18 }} />
+                          </motion.button>
+                        )}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}

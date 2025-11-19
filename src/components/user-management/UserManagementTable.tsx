@@ -6,20 +6,23 @@ import {
   Search,
   BadgeOutlined,
   PersonOutline,
-  CakeOutlined,
-  LocationOnOutlined,
   SchoolOutlined,
   AccountCircleOutlined,
-  WcOutlined,
   Edit,
   Delete,
   Add,
+  LockReset,
+  SwapHoriz,
+  FileUpload,
+  FileDownload,
+  Visibility,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "./EmptyState";
 import type { ManagedUser, ManagedUserRole } from "@/lib/api/user";
 
 const DEFAULT_CLASS_FILTER = "Semua Kelas";
+const DEFAULT_SCHOOL_FILTER = "Semua Sekolah";
 
 const identifierLabelMap: Record<ManagedUserRole, "NIP" | "NISN"> = {
   guru: "NIP",
@@ -43,6 +46,13 @@ interface UserManagementTableProps {
   onEdit: (user: ManagedUser) => void;
   onDelete: (user: ManagedUser) => void;
   onAdd: () => void;
+  onResetPassword?: (user: ManagedUser) => void;
+  onBulkMove?: () => void;
+  onImport?: () => void;
+  onExport?: () => void;
+  onViewDetail?: (user: ManagedUser) => void;
+  selectedUserIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 export default function UserManagementTable({
@@ -52,12 +62,24 @@ export default function UserManagementTable({
   onEdit,
   onDelete,
   onAdd,
+  onResetPassword,
+  onBulkMove,
+  onImport,
+  onExport,
+  onViewDetail,
+  selectedUserIds = [],
+  onSelectionChange,
 }: UserManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState(DEFAULT_CLASS_FILTER);
+  const [selectedSchool, setSelectedSchool] = useState(DEFAULT_SCHOOL_FILTER);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+  const [isSchoolDropdownOpen, setIsSchoolDropdownOpen] = useState(false);
+
+  // Use external selection if provided, otherwise manage internally
+  const selectedUsers = onSelectionChange ? selectedUserIds : [];
+  const setSelectedUsers = onSelectionChange || (() => { });
 
   const itemsPerPage = 10;
   const identifierLabel = identifierLabelMap[role];
@@ -75,9 +97,26 @@ export default function UserManagementTable({
     ];
   }, [users]);
 
+  const schoolOptions = useMemo(() => {
+    const schools = new Set<string>();
+    users.forEach((user) => {
+      if (user.sekolahName) {
+        schools.add(user.sekolahName);
+      }
+    });
+    return [
+      DEFAULT_SCHOOL_FILTER,
+      ...Array.from(schools).sort((a, b) => a.localeCompare(b)),
+    ];
+  }, [users]);
+
   const effectiveSelectedClass = classOptions.includes(selectedClass)
     ? selectedClass
     : DEFAULT_CLASS_FILTER;
+
+  const effectiveSelectedSchool = schoolOptions.includes(selectedSchool)
+    ? selectedSchool
+    : DEFAULT_SCHOOL_FILTER;
 
   const filteredUsers = useMemo(() => {
     const keyword = normalize(searchTerm);
@@ -92,9 +131,13 @@ export default function UserManagementTable({
         effectiveSelectedClass === DEFAULT_CLASS_FILTER ||
         user.kelasLevel === effectiveSelectedClass;
 
-      return matchesSearch && matchesClass;
+      const matchesSchool =
+        effectiveSelectedSchool === DEFAULT_SCHOOL_FILTER ||
+        user.sekolahName === effectiveSelectedSchool;
+
+      return matchesSearch && matchesClass && matchesSchool;
     });
-  }, [searchTerm, effectiveSelectedClass, users]);
+  }, [searchTerm, effectiveSelectedClass, effectiveSelectedSchool, users]);
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
   const activePage = Math.max(1, Math.min(currentPage, totalPages));
@@ -105,21 +148,26 @@ export default function UserManagementTable({
   );
 
   const toggleSelectUser = (userId: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
+    if (onSelectionChange) {
+      const newSelection = selectedUsers.includes(userId)
+        ? selectedUsers.filter((id) => id !== userId)
+        : [...selectedUsers, userId];
+      onSelectionChange(newSelection);
+    }
   };
 
   const toggleSelectAll = () => {
+    if (!onSelectionChange) return;
+
     if (displayedUsers.length === 0) {
-      setSelectedUsers([]);
+      onSelectionChange([]);
       return;
     }
 
     if (selectedUsers.length === displayedUsers.length) {
-      setSelectedUsers([]);
+      onSelectionChange([]);
     } else {
-      setSelectedUsers(displayedUsers.map((user) => user.id));
+      onSelectionChange(displayedUsers.map((user) => user.id));
     }
   };
 
@@ -133,15 +181,50 @@ export default function UserManagementTable({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-white text-2xl font-bold">{title}</h2>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onAdd}
-          className="flex items-center gap-2 px-6 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-lg"
-        >
-          <Add sx={{ fontSize: 20 }} />
-          <span>Tambah Akun</span>
-        </motion.button>
+        <div className="flex items-center gap-3">
+          {role === "siswa" && onBulkMove && selectedUsers.length > 0 && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onBulkMove}
+              className="flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 rounded-[15px] text-white font-semibold transition-all shadow-lg"
+            >
+              <SwapHoriz sx={{ fontSize: 20 }} />
+              <span>Pindah Kelas ({selectedUsers.length})</span>
+            </motion.button>
+          )}
+          {onImport && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onImport}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 rounded-[15px] text-white font-semibold transition-all shadow-lg"
+            >
+              <FileUpload sx={{ fontSize: 20 }} />
+              <span>Import Excel</span>
+            </motion.button>
+          )}
+          {onExport && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onExport}
+              className="flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-[15px] text-white font-semibold transition-all shadow-lg"
+            >
+              <FileDownload sx={{ fontSize: 20 }} />
+              <span>Export Excel</span>
+            </motion.button>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onAdd}
+            className="flex items-center gap-2 px-6 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-lg"
+          >
+            <Add sx={{ fontSize: 20 }} />
+            <span>Tambah Akun</span>
+          </motion.button>
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -161,20 +244,62 @@ export default function UserManagementTable({
           />
         </div>
 
-        {/* Class Filter Dropdown */}
+        {/* School Filter Dropdown */}
         <div className="relative">
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-md min-w-[150px] justify-between"
+            onClick={() => setIsSchoolDropdownOpen(!isSchoolDropdownOpen)}
+            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-md min-w-[180px] justify-between"
           >
-            <span>{effectiveSelectedClass}</span>
+            <span className="truncate">{effectiveSelectedSchool}</span>
             <ExpandMore
-              className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+              className={`transition-transform ${isSchoolDropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           <AnimatePresence>
-            {isDropdownOpen && (
+            {isSchoolDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full mt-2 right-0 bg-white rounded-[15px] shadow-xl overflow-hidden z-10 min-w-[180px] max-h-[300px] overflow-y-auto"
+              >
+                {schoolOptions.map((sekolah) => (
+                  <button
+                    key={sekolah}
+                    onClick={() => {
+                      setSelectedSchool(sekolah);
+                      setIsSchoolDropdownOpen(false);
+                      setCurrentPage(1);
+                      if (onSelectionChange) onSelectionChange([]);
+                    }}
+                    className={`w-full px-5 py-3 text-left transition-all ${effectiveSelectedSchool === sekolah
+                      ? "bg-primary text-white font-semibold"
+                      : "text-slate-700 hover:bg-slate-100"
+                      }`}
+                  >
+                    {sekolah}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Class Filter Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsClassDropdownOpen(!isClassDropdownOpen)}
+            className="flex items-center gap-2 px-5 py-3 bg-white rounded-[15px] text-primary font-semibold hover:bg-slate-50 transition-all shadow-md min-w-[150px] justify-between"
+          >
+            <span>{effectiveSelectedClass}</span>
+            <ExpandMore
+              className={`transition-transform ${isClassDropdownOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          <AnimatePresence>
+            {isClassDropdownOpen && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -186,9 +311,9 @@ export default function UserManagementTable({
                     key={kelas}
                     onClick={() => {
                       setSelectedClass(kelas);
-                      setIsDropdownOpen(false);
+                      setIsClassDropdownOpen(false);
                       setCurrentPage(1);
-                      setSelectedUsers([]);
+                      if (onSelectionChange) onSelectionChange([]);
                     }}
                     className={`w-full px-5 py-3 text-left transition-all ${effectiveSelectedClass === kelas
                       ? "bg-primary text-white font-semibold"
@@ -222,17 +347,19 @@ export default function UserManagementTable({
           <table className="w-full">
             <thead>
               <tr className="bg-linear-to-r from-primary to-primary-dark">
-                <th className="px-4 py-4 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedUsers.length === displayedUsers.length &&
-                      displayedUsers.length > 0
-                    }
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded accent-white cursor-pointer"
-                  />
-                </th>
+                {role === "siswa" && (
+                  <th className="px-4 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedUsers.length === displayedUsers.length &&
+                        displayedUsers.length > 0
+                      }
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded accent-white cursor-pointer"
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
                     <BadgeOutlined className="text-white" sx={{ fontSize: 18 }} />
@@ -259,33 +386,9 @@ export default function UserManagementTable({
                 </th>
                 <th className="px-4 py-4 text-left">
                   <div className="flex items-center gap-2">
-                    <CakeOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">
-                      Tanggal Lahir
-                    </span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <LocationOnOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">
-                      Alamat
-                    </span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
                     <SchoolOutlined className="text-white" sx={{ fontSize: 18 }} />
                     <span className="text-xs font-bold text-white uppercase tracking-wider">
                       Kelas
-                    </span>
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left">
-                  <div className="flex items-center gap-2">
-                    <WcOutlined className="text-white" sx={{ fontSize: 18 }} />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">
-                      Gender
                     </span>
                   </div>
                 </th>
@@ -308,14 +411,16 @@ export default function UserManagementTable({
                     className={`border-b border-gray-100 hover:bg-primary/5 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                       }`}
                   >
-                    <td className="px-4 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => toggleSelectUser(user.id)}
-                        className="w-4 h-4 rounded accent-primary cursor-pointer"
-                      />
-                    </td>
+                    {role === "siswa" && (
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => toggleSelectUser(user.id)}
+                          className="w-4 h-4 rounded accent-primary cursor-pointer"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -348,61 +453,22 @@ export default function UserManagementTable({
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center">
-                          <CakeOutlined className="text-pink-600" sx={{ fontSize: 16 }} />
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {user.tanggalLahir ?? "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                          <LocationOnOutlined className="text-orange-600" sx={{ fontSize: 16 }} />
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {user.alamat ?? "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
                           <SchoolOutlined className="text-green-600" sx={{ fontSize: 16 }} />
                         </div>
                         {role === "guru" && user.kelasAssignments && user.kelasAssignments.length > 1 ? (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1 mb-1">
-                              <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                {user.kelasAssignments.length} Kelas
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {user.kelasAssignments.map((assignment, idx) => {
-                                const kelasDisplay = assignment.kelasName ??
-                                  formatClassDisplay(assignment.kelasLevel, assignment.kelasRombel);
-                                return (
-                                  <span
-                                    key={idx}
-                                    className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-md border border-green-200"
-                                    title={`${assignment.kelasLevel ?? ""} ${assignment.kelasRombel ?? ""}`.trim()}
-                                  >
-                                    {kelasDisplay}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ) : role === "guru" && user.kelasAssignments && user.kelasAssignments.length === 1 ? (
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                              1 Kelas
+                              {user.kelasAssignments.length} Kelas
                             </span>
                             <span className="text-sm text-gray-700 font-semibold">
-                              {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
+                              {user.kelasAssignments.map((a) => a.kelasName ?? formatClassDisplay(a.kelasLevel, a.kelasRombel)).join(", ")}
                             </span>
                           </div>
+                        ) : role === "guru" && user.kelasAssignments && user.kelasAssignments.length === 1 ? (
+                          <span className="text-sm text-gray-700 font-semibold">
+                            {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
+                          </span>
                         ) : (
                           <span className="text-sm text-gray-700 font-semibold">
                             {user.kelasName ?? formatClassDisplay(user.kelasLevel, user.kelasRombel)}
@@ -411,17 +477,18 @@ export default function UserManagementTable({
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
-                          <WcOutlined className="text-teal-600" sx={{ fontSize: 16 }} />
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {user.jenisKelamin ?? "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
+                        {onViewDetail && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => onViewDetail(user)}
+                            className="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all shadow-md"
+                            title="Lihat Detail"
+                          >
+                            <Visibility sx={{ fontSize: 18 }} />
+                          </motion.button>
+                        )}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -431,6 +498,17 @@ export default function UserManagementTable({
                         >
                           <Edit sx={{ fontSize: 18 }} />
                         </motion.button>
+                        {onResetPassword && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => onResetPassword(user)}
+                            className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-all shadow-md"
+                            title="Reset Password"
+                          >
+                            <LockReset sx={{ fontSize: 18 }} />
+                          </motion.button>
+                        )}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -451,7 +529,7 @@ export default function UserManagementTable({
           {filteredUsers.length === 0 && (
             <EmptyState
               message="Tidak ada data yang ditemukan"
-              description={searchTerm || selectedClass !== "Semua Kelas"
+              description={searchTerm || selectedClass !== DEFAULT_CLASS_FILTER || selectedSchool !== DEFAULT_SCHOOL_FILTER
                 ? "Coba ubah kata kunci pencarian atau filter Anda"
                 : "Belum ada data pengguna. Klik tombol 'Tambah Akun' untuk menambahkan data baru"}
             />

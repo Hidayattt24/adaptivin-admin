@@ -70,6 +70,20 @@ export default function SchoolModal({
     if (!formData.alamat_sekolah.trim()) newErrors.alamat_sekolah = "Alamat wajib diisi";
 
     setErrors(newErrors);
+    
+    // Focus pada field pertama yang error
+    if (newErrors.nama_sekolah) {
+      setTimeout(() => {
+        const input = document.querySelector('input[name="nama_sekolah"]') as HTMLInputElement;
+        if (input) input.focus();
+      }, 100);
+    } else if (newErrors.alamat_sekolah) {
+      setTimeout(() => {
+        const textarea = document.querySelector('textarea[name="alamat_sekolah"]') as HTMLTextAreaElement;
+        if (textarea) textarea.focus();
+      }, 100);
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
@@ -132,17 +146,17 @@ export default function SchoolModal({
                     <SchoolOutlined className="text-primary" sx={{ fontSize: 18 }} />
                     Nama Sekolah
                   </label>
-                  <input
-                    type="text"
-                    name="nama_sekolah"
-                    value={formData.nama_sekolah}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-gray-900 font-medium ${errors.nama ? "border-red-500" : "border-gray-200 focus:border-primary"
-                      } focus:outline-none text-sm lg:text-base`}
-                    placeholder="Contoh: SDN 1 Banda Aceh"
-                    autoFocus
-                  />
-                  {errors.nama && <p className="text-red-500 text-xs mt-1">{errors.nama}</p>}
+                    <input
+                      type="text"
+                      name="nama_sekolah"
+                      value={formData.nama_sekolah}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-gray-900 font-medium ${errors.nama_sekolah ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-primary"
+                        } focus:outline-none text-sm lg:text-base`}
+                      placeholder="Contoh: SDN 1 Banda Aceh"
+                      autoFocus
+                    />
+                    {errors.nama_sekolah && <p className="text-red-500 text-xs mt-1">{errors.nama_sekolah}</p>}
                 </div>
 
                 {/* Alamat Lengkap */}
@@ -156,11 +170,11 @@ export default function SchoolModal({
                     value={formData.alamat_sekolah}
                     onChange={handleChange}
                     rows={4}
-                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-gray-900 font-medium ${errors.alamat ? "border-red-500" : "border-gray-200 focus:border-primary"
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-gray-900 font-medium ${errors.alamat_sekolah ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-primary"
                       } focus:outline-none resize-none text-sm lg:text-base`}
                     placeholder="Jl. Pendidikan No. 123, Banda Aceh, Aceh"
                   />
-                  {errors.alamat && <p className="text-red-500 text-xs mt-1">{errors.alamat}</p>}
+                  {errors.alamat_sekolah && <p className="text-red-500 text-xs mt-1">{errors.alamat_sekolah}</p>}
                   <p className="text-xs text-gray-500 mt-2">💡 Sertakan nama jalan, nomor, kota, dan provinsi</p>
                 </div>
               </div>
