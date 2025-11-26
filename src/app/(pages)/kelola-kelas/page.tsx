@@ -113,19 +113,21 @@ export default function KelolaKelasPage() {
       const sekolahMap = await fetchSchools();
 
       const kelasList = await getAllKelas();
-      
+
       // Fetch all teachers to map them by kelasId
       const allTeachers = await getAllUsers({ role: "guru" });
       const guruMap: Record<string, string[]> = {};
       allTeachers.forEach((guru) => {
-        if (guru.kelasId) {
-          // Split kelasId by comma in case there are multiple classes
-          const kelasIds = guru.kelasId.split(',').map((id: string) => id.trim());
-          kelasIds.forEach((kelasId: string) => {
-            if (!guruMap[kelasId]) {
-              guruMap[kelasId] = [];
+        // Use kelasAssignments to get all classes assigned to this guru
+        if (guru.kelasAssignments && guru.kelasAssignments.length > 0) {
+          guru.kelasAssignments.forEach((assignment) => {
+            const kelasId = assignment.kelasId;
+            if (kelasId) {
+              if (!guruMap[kelasId]) {
+                guruMap[kelasId] = [];
+              }
+              guruMap[kelasId].push(guru.nama);
             }
-            guruMap[kelasId].push(guru.nama);
           });
         }
       });
@@ -209,7 +211,7 @@ export default function KelolaKelasPage() {
       setIsSubmitting(true);
       const response = await deleteKelas(classData.id);
       await refreshClasses();
-      
+
       // Show detailed success message
       const affected = response?.affected || {};
       await Swal.fire({

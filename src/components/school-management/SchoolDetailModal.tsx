@@ -12,6 +12,7 @@ import {
 } from "@mui/icons-material";
 import { getAllUsers } from "@/lib/api/user";
 import { getAllKelas } from "@/lib/api/kelas";
+import { getAllAdmins } from "@/lib/api/user";
 
 interface Sekolah {
   id: string;
@@ -29,6 +30,8 @@ interface SchoolStats {
   totalGuru: number;
   totalSiswa: number;
   totalKelas: number;
+  totalAdmin: number;
+  adminDetails: Array<{ nama: string; email: string; jenisKelamin: string }>;
   isLoading: boolean;
 }
 
@@ -41,6 +44,8 @@ export default function SchoolDetailModal({
     totalGuru: 0,
     totalSiswa: 0,
     totalKelas: 0,
+    totalAdmin: 0,
+    adminDetails: [],
     isLoading: true,
   });
 
@@ -49,12 +54,13 @@ export default function SchoolDetailModal({
 
     const fetchStats = async () => {
       setStats((prev) => ({ ...prev, isLoading: true }));
-      
+
       try {
         // Fetch semua data secara paralel
-        const [users, kelas] = await Promise.all([
+        const [users, kelas, admins] = await Promise.all([
           getAllUsers({ sekolah_id: sekolah.id }),
           getAllKelas({ sekolahId: sekolah.id }),
+          getAllAdmins(),
         ]);
 
         // Hitung jumlah guru dan siswa
@@ -62,10 +68,21 @@ export default function SchoolDetailModal({
         const totalSiswa = users.filter((u) => u.role === "siswa").length;
         const totalKelas = kelas.length;
 
+        // Filter admin yang terkait dengan sekolah ini
+        const schoolAdmins = admins.filter((admin) => admin.sekolah_id === sekolah.id);
+        const totalAdmin = schoolAdmins.length;
+        const adminDetails = schoolAdmins.map((admin) => ({
+          nama: admin.nama_lengkap,
+          email: admin.email,
+          jenisKelamin: admin.jenisKelamin,
+        }));
+
         setStats({
           totalGuru,
           totalSiswa,
           totalKelas,
+          totalAdmin,
+          adminDetails,
           isLoading: false,
         });
       } catch (error) {
@@ -74,6 +91,8 @@ export default function SchoolDetailModal({
           totalGuru: 0,
           totalSiswa: 0,
           totalKelas: 0,
+          totalAdmin: 0,
+          adminDetails: [],
           isLoading: false,
         });
       }
@@ -101,7 +120,7 @@ export default function SchoolDetailModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative bg-white rounded-[25px] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+            className="relative bg-white rounded-[25px] shadow-2xl w-full max-w-3xl max-h-screen overflow-hidden"
           >
             {/* Header */}
             <div className="bg-linear-to-r from-primary to-primary-dark px-6 lg:px-8 py-4 lg:py-6">
@@ -138,7 +157,7 @@ export default function SchoolDetailModal({
                   <SchoolOutlined className="text-primary" />
                   Informasi Sekolah
                 </h3>
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Nama Sekolah</p>
@@ -155,6 +174,52 @@ export default function SchoolDetailModal({
                 </div>
               </div>
 
+              {/* Daftar Admin */}
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <PersonOutline className="text-primary" />
+                  Admin Sekolah
+                </h3>
+                {stats.adminDetails.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.adminDetails.map((admin, index) => (
+                      <div
+                        key={index}
+                        className="bg-white p-4 rounded-xl border border-gray-200 hover:border-primary transition-colors"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <PersonOutline className="text-primary" sx={{ fontSize: 20 }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-800 mb-1">
+                              {admin.nama}
+                            </p>
+                            <div className="space-y-1">
+                              <p className="text-xs text-gray-600 flex items-center gap-1">
+                                <span className="font-medium">Email:</span>
+                                <span className="truncate">{admin.email}</span>
+                              </p>
+                              {admin.jenisKelamin && (
+                                <p className="text-xs text-gray-600">
+                                  <span className="font-medium">Jenis Kelamin:</span>{" "}
+                                  <span className="capitalize">{admin.jenisKelamin}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : !stats.isLoading ? (
+                  <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 text-center">
+                    <PersonOutline className="text-gray-400 mx-auto mb-2" sx={{ fontSize: 40 }} />
+                    <p className="text-gray-500 text-sm">Belum ada admin yang ditugaskan di sekolah ini</p>
+                  </div>
+                ) : null}
+              </div>
+
               {/* Statistik */}
               <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -168,13 +233,13 @@ export default function SchoolDetailModal({
                     <p className="text-gray-500 mt-3 text-sm">Memuat statistik...</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Jumlah Guru */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
-                      className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200"
+                      className="bg-linear-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -190,7 +255,7 @@ export default function SchoolDetailModal({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-200"
+                      className="bg-linear-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-200"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
@@ -206,7 +271,7 @@ export default function SchoolDetailModal({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-5 border border-orange-200"
+                      className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-5 border border-orange-200"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
@@ -216,15 +281,24 @@ export default function SchoolDetailModal({
                       <p className="text-3xl font-bold text-orange-700 mb-1">{stats.totalKelas}</p>
                       <p className="text-sm text-orange-600 font-medium">Kelas Aktif</p>
                     </motion.div>
+
+                    {/* Jumlah Admin */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="bg-linear-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-200"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                          <PersonOutline className="text-blue-600" sx={{ fontSize: 24 }} />
+                        </div>
+                      </div>
+                      <p className="text-3xl font-bold text-blue-700 mb-1">{stats.totalAdmin}</p>
+                      <p className="text-sm text-blue-600 font-medium">Admin Sekolah</p>
+                    </motion.div>
                   </div>
                 )}
-              </div>
-
-              {/* Info Footer */}
-              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="text-xs text-blue-600 text-center">
-                  💡 Statistik ini diperbarui secara real-time berdasarkan data terbaru
-                </p>
               </div>
             </div>
 

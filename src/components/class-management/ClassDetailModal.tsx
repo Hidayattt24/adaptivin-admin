@@ -45,6 +45,7 @@ export default function ClassDetailModal({
     teachers: 0,
     students: 0,
   });
+  const [teacherDetails, setTeacherDetails] = useState<Array<{ nama: string; email: string; nip: string | null }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +53,7 @@ export default function ClassDetailModal({
     if (!isOpen || !classData?.id) {
       setDetailData(null);
       setCounts({ teachers: 0, students: 0 });
+      setTeacherDetails([]);
       setError(null);
       return;
     }
@@ -70,12 +72,15 @@ export default function ClassDetailModal({
           getAllUsers({ role: "siswa" }),
         ]);
 
-        // Filter teachers who teach this class
+        // Filter teachers who teach this class using kelasAssignments
         const teachersInClass = allTeachers.filter((teacher) => {
-          if (!teacher.kelasId) return false;
-          // Handle multiple classes (comma-separated)
-          const teacherClassIds = teacher.kelasId.split(',').map(id => id.trim());
-          return teacherClassIds.includes(classData.id);
+          if (!teacher.kelasAssignments || teacher.kelasAssignments.length === 0) {
+            return false;
+          }
+          // Check if any of the teacher's assignments match this class
+          return teacher.kelasAssignments.some(
+            (assignment) => assignment.kelasId === classData.id
+          );
         });
 
         // Filter students who are in this class
@@ -83,10 +88,18 @@ export default function ClassDetailModal({
           return student.kelasId === classData.id;
         });
 
+        // Extract teacher details (nama, email, NIP)
+        const details = teachersInClass.map((teacher) => ({
+          nama: teacher.nama,
+          email: teacher.email,
+          nip: teacher.identifier,
+        }));
+
         setCounts({
           teachers: teachersInClass.length,
           students: studentsInClass.length,
         });
+        setTeacherDetails(details);
       } catch (err) {
         console.error("Failed to fetch class details or counts:", err);
         setError("Gagal memuat detail kelas. Silakan coba lagi.");
@@ -218,6 +231,50 @@ export default function ClassDetailModal({
                       </p>
                       <p className="text-green-700 text-sm">Siswa</p>
                     </div>
+                  </div>
+
+                  {/* Daftar Guru */}
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-800 mb-3 flex items-center gap-2">
+                      <PersonOutline className="text-purple-600" /> Daftar Guru
+                    </h3>
+                    {teacherDetails.length > 0 ? (
+                      <div className="space-y-3">
+                        {teacherDetails.map((teacher, index) => (
+                          <div
+                            key={index}
+                            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-purple-300 transition-colors"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                                <PersonOutline className="text-purple-600" sx={{ fontSize: 20 }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-gray-800 mb-1">
+                                  {teacher.nama}
+                                </p>
+                                <div className="space-y-1">
+                                  <p className="text-xs text-gray-600 flex items-center gap-1">
+                                    <span className="font-medium">Email:</span>
+                                    <span className="truncate">{teacher.email}</span>
+                                  </p>
+                                  {teacher.nip && (
+                                    <p className="text-xs text-gray-600">
+                                      <span className="font-medium">NIP:</span> {teacher.nip}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 text-center">
+                        <PersonOutline className="text-gray-400 mx-auto mb-2" sx={{ fontSize: 40 }} />
+                        <p className="text-gray-500 text-sm">Belum ada guru yang ditugaskan di kelas ini</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
